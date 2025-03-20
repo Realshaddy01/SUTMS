@@ -1,0 +1,54 @@
+name: sutms
+description: Smart Urban Traffic Management System
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  provider: ^6.1.1
+  http: ^1.1.0
+  shared_preferences: ^2.2.2
+  image_picker: ^1.0.4
+  path_provider: ^2.1.1
+  path: ^1.8.3
+  intl: ^0.18.1
+  google_fonts: ^6.1.0
+  flutter_svg: ^2.0.9
+  animated_text_kit: ^4.2.2
+  camera: ^0.10.5+5
+  video_player: ^2.7.2
+  permission_handler: ^11.0.1
+  geolocator: ^10.1.0
+  geocoding: ^2.1.1
+  flutter_image_compress: ^2.1.0
+  cached_network_image: ^3.3.0
+  shimmer: ^3.0.0
+  lottie: ^2.7.0
+  flutter_stripe: ^9.4.0
+  flutter_dotenv: ^5.1.0
+  tflite_flutter: ^0.10.1
+  firebase_core: ^2.15.1
+  firebase_messaging: ^14.6.7
+  flutter_local_notifications: ^15.1.1
+  video_compress: ^3.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/animations/
+    - assets/models/
+    - .env
+
