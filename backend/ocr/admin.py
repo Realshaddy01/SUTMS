@@ -12,16 +12,15 @@ from .models import LicensePlateDetection, OCRModel
 class LicensePlateDetectionAdmin(admin.ModelAdmin):
     """Admin interface for license plate detections."""
     list_display = (
-        'id', 'display_text', 'user', 'confidence_display', 
-        'status', 'created_at', 'has_vehicle', 'view_image'
+        'id', 'display_text', 'status', 'created_at', 'view_image'
     )
-    list_filter = ('status', 'is_in_training_set', 'created_at', 'user')
-    search_fields = ('detected_text', 'corrected_text', 'user__username')
+    list_filter = ('status', 'is_in_training_set', 'created_at')
+    search_fields = ('detected_text', 'corrected_text')
     readonly_fields = ('processing_time_ms', 'created_at', 'updated_at')
-    autocomplete_fields = ('user', 'matched_vehicle')
+    # Removed autocomplete_fields to fix the error
     fieldsets = (
         (None, {
-            'fields': ('user', 'status', 'matched_vehicle', 'is_in_training_set')
+            'fields': ('status', 'is_in_training_set')
         }),
         (_('Detection Results'), {
             'fields': (
@@ -74,12 +73,12 @@ class OCRModelAdmin(admin.ModelAdmin):
     """Admin interface for OCR models."""
     list_display = (
         'name', 'version', 'model_type', 'is_active', 
-        'accuracy', 'created_at', 'created_by'
+        'accuracy', 'created_at'
     )
     list_filter = ('model_type', 'is_active', 'created_at')
     search_fields = ('name', 'version', 'description')
     readonly_fields = ('created_at', 'last_used')
-    autocomplete_fields = ('created_by',)
+    # Removed autocomplete_fields to fix the error
     fieldsets = (
         (None, {
             'fields': ('name', 'version', 'model_type', 'is_active')
@@ -88,7 +87,7 @@ class OCRModelAdmin(admin.ModelAdmin):
             'fields': ('description', 'file_path', 'accuracy')
         }),
         (_('Metadata'), {
-            'fields': ('created_by', 'created_at', 'last_used'),
+            'fields': ('created_at', 'last_used'),
             'classes': ('collapse',)
         }),
     )

@@ -17,19 +17,11 @@ urlpatterns = [
     # Authentication
     path('accounts/', include('allauth.urls')),
     
-    # Dashboard (main app)
-    path('', include('dashboard.urls')),
+    # Core app (home page and health check)
+    path('', include('core.urls')),
     
     # API endpoints
     path('api/', include('api.urls')),
-    
-    # App-specific URLs
-    path('tracking/', include('tracking.urls')),
-    path('vehicles/', include('vehicles.urls')),
-    path('violations/', include('violations.urls')),
-    path('payments/', include('payments.urls')),
-    path('ocr/', include('ocr.urls')),
-    path('training/', include('training.urls')),
     
     # Favicon
     path('favicon.ico', RedirectView.as_view(url='/static/images/favicon.ico')),

@@ -36,6 +36,14 @@ INSTALLED_APPS = [
     
     # SUTMS apps
     'core',
+    'accounts',
+    'api',
+    'dashboard',
+    'ocr',
+    'payments',
+    'tracking',
+    'vehicles',
+    'violations',
 ]
 
 MIDDLEWARE = [
@@ -142,3 +150,6 @@ REST_FRAMEWORK = {
 # CORS settings
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:8000,http://localhost:5000').split(',')
 CORS_ALLOW_CREDENTIALS = True
+
+# Custom user model
+AUTH_USER_MODEL = 'accounts.User'

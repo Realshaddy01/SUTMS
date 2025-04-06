@@ -1,3 +1,0 @@
-"""
-OCR models package
-"""
