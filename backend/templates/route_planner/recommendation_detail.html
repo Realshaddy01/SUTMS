@@ -1,0 +1,301 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Route Details{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-route text-primary me-2"></i> Route Recommendation
+        </h1>
+        <div>
+            <button id="toggle-favorite-btn" class="btn btn-sm {% if recommendation.is_favorite %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                <i class="fas fa-star me-1"></i>
+                <span id="favorite-text">
+                    {% if recommendation.is_favorite %}Remove from Favorites{% else %}Add to Favorites{% endif %}
+                </span>
+            </button>
+            <a href="{% url 'route_planner:index' %}" class="btn btn-sm btn-primary">
+                <i class="fas fa-search me-1"></i> Plan New Route
+            </a>
+        </div>
+    </div>
+
+    <!-- Route Overview -->
+    <div class="row mb-4">
+        <div class="col-xl-12">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between bg-gradient-primary text-white">
+                    <h6 class="m-0 font-weight-bold">Route Overview</h6>
+                    <span>{{ recommendation.created_at|date:"F d, Y g:i A" }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex mb-2">
+                                        <div class="flex-shrink-0 me-3">
+                                            <div class="icon-circle bg-primary text-white p-3">
+                                                <i class="fas fa-map-marker-alt"></i>
+                                            </div>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-0">Origin</h5>
+                                            <p class="mb-0">{{ recommendation.origin.name }}</p>
+                                            <small class="text-muted">{{ recommendation.origin.address }}</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex align-items-center justify-content-start ms-5 mb-2">
+                                        <div class="border-start border-primary h-100 position-absolute" style="left: 2.35rem;"></div>
+                                        <div class="text-muted">
+                                            <i class="fas fa-arrow-down me-2"></i> 
+                                            {% with fastest=routes|dictsort:"estimated_duration_minutes"|first %}
+                                                {% if fastest %}
+                                                    {{ fastest.estimated_duration_minutes }} min ({{ fastest.total_distance_km }} km)
+                                                {% endif %}
+                                            {% endwith %}
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex">
+                                        <div class="flex-shrink-0 me-3">
+                                            <div class="icon-circle bg-success text-white p-3">
+                                                <i class="fas fa-flag-checkered"></i>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h5 class="mb-0">Destination</h5>
+                                            <p class="mb-0">{{ recommendation.destination.name }}</p>
+                                            <small class="text-muted">{{ recommendation.destination.address }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <h6>Travel Time</h6>
+                                <p class="mb-1">{{ recommendation.travel_datetime|date:"l, F d, Y" }}</p>
+                                <p>{{ recommendation.travel_datetime|date:"g:i A" }}</p>
+                            </div>
+                            
+                            {% if active_jams %}
+                                <div class="mb-0">
+                                    <h6 class="text-warning">
+                                        <i class="fas fa-exclamation-triangle me-1"></i> Traffic Alerts
+                                    </h6>
+                                    <ul class="list-unstyled small">
+                                        {% for jam in active_jams|slice:":3" %}
+                                            <li>
+                                                <span class="badge {% if jam.severity == 'low' %}bg-success{% elif jam.severity == 'medium' %}bg-warning{% elif jam.severity == 'high' %}bg-danger{% elif jam.severity == 'severe' %}bg-danger text-white fw-bold{% endif %} me-1">
+                                                    {{ jam.get_severity_display }}
+                                                </span>
+                                                {{ jam.location.name }}
+                                            </li>
+                                        {% endfor %}
+                                        {% if active_jams.count > 3 %}
+                                            <li>
+                                                <a href="{% url 'route_planner:traffic_jams' %}" class="text-primary">
+                                                    + {{ active_jams.count|add:"-3" }} more
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Route Options -->
+    <div class="row">
+        <div class="col-xl-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Route Options</h6>
+                    <div class="ms-auto">
+                        <div class="btn-group btn-group-sm" role="group" id="route-tabs">
+                            {% for route in routes %}
+                                <button type="button" class="btn {% if forloop.first %}btn-primary active{% else %}btn-outline-primary{% endif %} route-tab" 
+                                        data-route-id="{{ route.id }}">
+                                    {{ route.get_route_type_display }}
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% for route in routes %}
+                        <div class="route-details" id="route-{{ route.id }}" style="{% if not forloop.first %}display: none;{% endif %}">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title mb-3">
+                                                {{ route.get_route_type_display }} Route
+                                                
+                                                {% if route.route_type == 'fastest' %}
+                                                    <span class="text-primary ms-1">
+                                                        <i class="fas fa-bolt" data-bs-toggle="tooltip" title="Fastest route"></i>
+                                                    </span>
+                                                {% elif route.route_type == 'shortest' %}
+                                                    <span class="text-success ms-1">
+                                                        <i class="fas fa-compress-arrows-alt" data-bs-toggle="tooltip" title="Shortest distance"></i>
+                                                    </span>
+                                                {% endif %}
+                                            </h6>
+                                            
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="bg-primary text-white rounded-circle p-2" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+                                                        <i class="fas fa-clock"></i>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div class="small text-muted">Estimated Time</div>
+                                                    <div class="h5 mb-0">
+                                                        {{ route.estimated_duration_minutes }} minutes
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="d-flex align-items-center mb-0">
+                                                <div class="flex-shrink-0 me-3">
+                                                    <div class="bg-info text-white rounded-circle p-2" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+                                                        <i class="fas fa-road"></i>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div class="small text-muted">Total Distance</div>
+                                                    <div class="h5 mb-0">
+                                                        {{ route.total_distance_km }} km
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-grid">
+                                        <button class="btn btn-success start-navigation-btn" data-route-id="{{ route.id }}">
+                                            <i class="fas fa-directions me-1"></i> Start Navigation
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-8">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="card-title mb-3">Route Segments</h6>
+                                            
+                                            <div class="route-segments">
+                                                {% with route_data=route.route_data|safe %}
+                                                    {% if route_data %}
+                                                        {% with route_obj=route_data|pprint %}
+                                                            <div class="mb-4">
+                                                                <!-- This would be replaced with a map in a real implementation -->
+                                                                <div class="alert alert-info mb-2">
+                                                                    <i class="fas fa-map me-1"></i> Map view would be shown here in the full implementation
+                                                                </div>
+                                                                
+                                                                <!-- Route segments list -->
+                                                                <div class="list-group">
+                                                                    {% for segment in route_data.segments %}
+                                                                        <div class="list-group-item">
+                                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                                <div>
+                                                                                    <i class="fas fa-arrow-right text-primary me-2"></i>
+                                                                                    <strong>{{ segment.from_location.name }}</strong> → 
+                                                                                    <strong>{{ segment.to_location.name }}</strong>
+                                                                                </div>
+                                                                                <div class="text-muted">
+                                                                                    {{ segment.duration_minutes }} min ({{ segment.distance_km }} km)
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    {% endfor %}
+                                                                </div>
+                                                            </div>
+                                                        {% endwith %}
+                                                    {% else %}
+                                                        <div class="alert alert-warning">
+                                                            <i class="fas fa-exclamation-triangle me-1"></i> Route details not available
+                                                        </div>
+                                                    {% endif %}
+                                                {% endwith %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Enable tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+    
+    // Route tabs
+    $('.route-tab').click(function() {
+        const routeId = $(this).data('route-id');
+        
+        // Update active tab
+        $('.route-tab').removeClass('btn-primary active').addClass('btn-outline-primary');
+        $(this).removeClass('btn-outline-primary').addClass('btn-primary active');
+        
+        // Show selected route details
+        $('.route-details').hide();
+        $(`#route-${routeId}`).show();
+    });
+    
+    // Toggle favorite
+    $('#toggle-favorite-btn').click(function() {
+        const btn = $(this);
+        
+        $.ajax({
+            url: '{% url "route_planner:toggle_favorite" recommendation.id %}',
+            type: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    if (response.is_favorite) {
+                        btn.removeClass('btn-outline-warning').addClass('btn-warning');
+                        $('#favorite-text').text('Remove from Favorites');
+                    } else {
+                        btn.removeClass('btn-warning').addClass('btn-outline-warning');
+                        $('#favorite-text').text('Add to Favorites');
+                    }
+                }
+            },
+            error: function() {
+                alert('Failed to update favorite status');
+            }
+        });
+    });
+    
+    // Start navigation button (simulated for demo)
+    $('.start-navigation-btn').click(function() {
+        alert('Navigation would start here in the full application implementation. This would typically open a turn-by-turn navigation view or link to a navigation app.');
+    });
+});
+</script>
+{% endblock %}

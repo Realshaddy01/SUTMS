@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'violations',
     'payments',
     'training',
+    'route_planner',
 ]
 
 # Custom user model

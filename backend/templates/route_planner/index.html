@@ -1,0 +1,240 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Route Planner{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0">Smart Route Planner</h5>
+                </div>
+                <div class="card-body">
+                    <form id="route-planner-form" method="post" action="{% url 'route_planner:get_recommendations' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="origin_id" class="form-label">Origin</label>
+                            <select class="form-select" id="origin_id" name="origin_id" required>
+                                <option value="">Select origin</option>
+                                {% for location in locations %}
+                                    <option value="{{ location.id }}" {% if location.is_popular %}class="fw-bold"{% endif %}>
+                                        {{ location.name }}
+                                        {% if location.is_popular %}<span class="text-muted">(Popular)</span>{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="destination_id" class="form-label">Destination</label>
+                            <select class="form-select" id="destination_id" name="destination_id" required>
+                                <option value="">Select destination</option>
+                                {% for location in locations %}
+                                    <option value="{{ location.id }}" {% if location.is_popular %}class="fw-bold"{% endif %}>
+                                        {{ location.name }}
+                                        {% if location.is_popular %}<span class="text-muted">(Popular)</span>{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="travel_datetime" class="form-label">Travel Date & Time (Optional)</label>
+                            <input type="datetime-local" class="form-control" id="travel_datetime" name="travel_datetime">
+                            <div class="form-text">Leave blank to plan for current time.</div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-route me-2"></i> Find Best Routes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            {% if active_jams %}
+                <div class="card mb-4 border-left-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i> Traffic Alerts</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% for jam in active_jams %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="badge {% if jam.severity == 'low' %}bg-success{% elif jam.severity == 'medium' %}bg-warning{% elif jam.severity == 'high' %}bg-danger{% elif jam.severity == 'severe' %}bg-danger text-white fw-bold{% endif %} me-2">
+                                                {{ jam.get_severity_display }}
+                                            </span>
+                                            <strong>{{ jam.location.name }}</strong>
+                                        </div>
+                                        <small class="text-muted">{{ jam.start_time|timesince }} ago</small>
+                                    </div>
+                                    {% if jam.description %}
+                                        <div class="mt-1">{{ jam.description }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mt-2">
+                            <a href="{% url 'route_planner:traffic_jams' %}" class="btn btn-sm btn-outline-warning">
+                                <i class="fas fa-map-marked-alt me-1"></i> View All Traffic Jams
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Recent Routes</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_recommendations %}
+                        <div class="list-group">
+                            {% for recommendation in recent_recommendations %}
+                                <a href="{% url 'route_planner:view_recommendation' recommendation.id %}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ recommendation.origin.name }} → {{ recommendation.destination.name }}</h6>
+                                        <small>{{ recommendation.created_at|date:"M d, g:i a" }}</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        {% with fastest=recommendation.routes.all|dictsort:"estimated_duration_minutes"|first %}
+                                            {% if fastest %}
+                                                <i class="fas fa-clock text-info me-1"></i> {{ fastest.estimated_duration_minutes }} min
+                                                <i class="fas fa-road text-secondary ms-2 me-1"></i> {{ fastest.total_distance_km }} km
+                                            {% endif %}
+                                        {% endwith %}
+                                    </p>
+                                    {% if recommendation.is_favorite %}
+                                        <span class="text-warning"><i class="fas fa-star"></i> Favorite</span>
+                                    {% endif %}
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">You haven't planned any routes yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Benefits</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <span class="icon-circle bg-primary text-white">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </span>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-1">Time-Aware Routing</h6>
+                            <p class="small text-muted mb-0">Routes are optimized based on historical traffic patterns for the selected time.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex mb-3">
+                        <div class="flex-shrink-0">
+                            <span class="icon-circle bg-info text-white">
+                                <i class="fas fa-map-marked-alt"></i>
+                            </span>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-1">Real-Time Traffic</h6>
+                            <p class="small text-muted mb-0">Routes account for current traffic jams and congestion reports.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <span class="icon-circle bg-success text-white">
+                                <i class="fas fa-star"></i>
+                            </span>
+                        </div>
+                        <div class="ms-3">
+                            <h6 class="mb-1">Multiple Options</h6>
+                            <p class="small text-muted mb-0">Receive fastest, shortest, and alternative route options for flexibility.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-3">
+                        <a href="{% url 'route_planner:traffic_jams' %}" class="btn btn-sm btn-outline-success">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Report Traffic Jam
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Set default datetime to now + 15 minutes
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 15);
+    const defaultDateTime = now.toISOString().slice(0, 16);
+    $('#travel_datetime').attr('min', defaultDateTime);
+    
+    // Handle form submission with AJAX
+    $('#route-planner-form').submit(function(e) {
+        e.preventDefault();
+        
+        // Basic validation
+        const originId = $('#origin_id').val();
+        const destinationId = $('#destination_id').val();
+        
+        if (originId === destinationId && originId !== '') {
+            alert('Origin and destination cannot be the same location.');
+            return false;
+        }
+        
+        // Show loading indicator
+        const submitBtn = $(this).find('button[type="submit"]');
+        const originalBtnText = submitBtn.html();
+        submitBtn.html('<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Finding routes...');
+        submitBtn.prop('disabled', true);
+        
+        // Submit form with AJAX
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: $(this).serialize(),
+            dataType: 'json',
+            success: function(response) {
+                if (response.success && response.redirect_url) {
+                    window.location.href = response.redirect_url;
+                } else {
+                    alert(response.error || 'An error occurred while finding routes.');
+                    submitBtn.html(originalBtnText);
+                    submitBtn.prop('disabled', false);
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = 'An error occurred while finding routes.';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.error) {
+                        errorMsg = response.error;
+                    }
+                } catch (e) {}
+                
+                alert(errorMsg);
+                submitBtn.html(originalBtnText);
+                submitBtn.prop('disabled', false);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

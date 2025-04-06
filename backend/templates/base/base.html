@@ -450,6 +450,25 @@
                     <span>Notifications</span>
                 </a>
             </li>
+
+            <!-- Route Planner Section -->
+            <div class="sidebar-heading">
+                Navigation
+            </div>
+            
+            <li class="nav-item {% if 'routes' in request.path and not 'traffic_jams' in request.path %}active{% endif %}">
+                <a class="nav-link" href="{% url 'route_planner:index' %}">
+                    <i class="fas fa-fw fa-route"></i>
+                    <span>Route Planner</span>
+                </a>
+            </li>
+            
+            <li class="nav-item {% if 'routes/traffic_jams' in request.path %}active{% endif %}">
+                <a class="nav-link" href="{% url 'route_planner:traffic_jams' %}">
+                    <i class="fas fa-fw fa-map-marked-alt"></i>
+                    <span>Traffic Jams</span>
+                </a>
+            </li>
             
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
@@ -462,7 +481,6 @@
             </div>
         </ul>
         <!-- End of Sidebar -->
-        
         <!-- Content Wrapper -->
         <div id="content-wrapper" class="d-flex flex-column">
             <!-- Main Content -->

@@ -1,0 +1,218 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Traffic Jams{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Traffic Jams</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-4" id="trafficJamsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab" aria-controls="active" aria-selected="true">
+                                Active Jams
+                                <span class="badge bg-danger ms-1">{{ active_jams|length }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="resolved-tab" data-bs-toggle="tab" data-bs-target="#resolved" type="button" role="tab" aria-controls="resolved" aria-selected="false">
+                                Recently Resolved
+                                <span class="badge bg-secondary ms-1">{{ resolved_jams|length }}</span>
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="trafficJamsTabContent">
+                        <div class="tab-pane fade show active" id="active" role="tabpanel" aria-labelledby="active-tab">
+                            {% if active_jams %}
+                                <div class="list-group">
+                                    {% for jam in active_jams %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h5 class="mb-0">{{ jam.location.name }}</h5>
+                                                <span class="badge {% if jam.severity == 'low' %}bg-success{% elif jam.severity == 'medium' %}bg-warning{% elif jam.severity == 'high' %}bg-danger{% elif jam.severity == 'severe' %}bg-danger text-white fw-bold{% endif %}">
+                                                    {{ jam.get_severity_display }}
+                                                </span>
+                                            </div>
+                                            
+                                            <div class="mb-2">
+                                                <small class="text-muted">Reported {{ jam.start_time|timesince }} ago by {{ jam.reported_by.get_full_name|default:jam.reported_by.username }}</small>
+                                            </div>
+                                            
+                                            {% if jam.description %}
+                                                <p class="mb-2">{{ jam.description }}</p>
+                                            {% endif %}
+                                            
+                                            <div>
+                                                <span class="text-muted me-2">{{ jam.duration_minutes }} minutes</span>
+                                                
+                                                {% if request.user.is_staff or request.user.is_officer or request.user == jam.reported_by %}
+                                                    <form class="d-inline" method="post" action="{% url 'route_planner:resolve_traffic_jam' jam.id %}">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                                            <i class="fas fa-check"></i> Mark as Resolved
+                                                        </button>
+                                                    </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-success">
+                                    <i class="fas fa-check-circle"></i> No active traffic jams reported. Roads are clear!
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="tab-pane fade" id="resolved" role="tabpanel" aria-labelledby="resolved-tab">
+                            {% if resolved_jams %}
+                                <div class="list-group">
+                                    {% for jam in resolved_jams %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h5 class="mb-0">{{ jam.location.name }}</h5>
+                                                <small class="text-muted">Resolved {{ jam.end_time|timesince }} ago</small>
+                                            </div>
+                                            
+                                            <div class="mb-2">
+                                                <span class="badge {% if jam.severity == 'low' %}bg-success{% elif jam.severity == 'medium' %}bg-warning{% elif jam.severity == 'high' %}bg-danger{% elif jam.severity == 'severe' %}bg-danger text-white fw-bold{% endif %}">
+                                                    {{ jam.get_severity_display }}
+                                                </span>
+                                                <small class="text-muted ms-2">
+                                                    Lasted for {{ jam.duration_minutes }} minutes
+                                                </small>
+                                            </div>
+                                            
+                                            {% if jam.description %}
+                                                <p class="mb-0">{{ jam.description }}</p>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    No recently resolved traffic jams.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Report Traffic Jam</h5>
+                </div>
+                <div class="card-body">
+                    <form id="report-jam-form" method="post" action="{% url 'route_planner:report_traffic_jam' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="location_id" class="form-label">Location</label>
+                            <select class="form-select" id="location_id" name="location_id" required>
+                                <option value="">Select location</option>
+                                {% for location in locations %}
+                                    <option value="{{ location.id }}">{{ location.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="severity" class="form-label">Traffic Jam Severity</label>
+                            <select class="form-select" id="severity" name="severity" required>
+                                <option value="">Select severity</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="severe">Severe</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description (Optional)</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Report Traffic Jam</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Information</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Severity Levels</h6>
+                    <ul class="list-unstyled">
+                        <li><span class="badge bg-success">Low</span> - Slight slowdown, delay under 5 minutes</li>
+                        <li><span class="badge bg-warning">Medium</span> - Noticeable congestion, 5-15 minute delay</li>
+                        <li><span class="badge bg-danger">High</span> - Heavy traffic, 15-30 minute delay</li>
+                        <li><span class="badge bg-danger fw-bold">Severe</span> - Standstill, 30+ minute delay</li>
+                    </ul>
+                    
+                    <hr>
+                    
+                    <p class="small">Traffic information is used to help optimize route recommendations for all users. Thank you for contributing!</p>
+                    
+                    <div class="d-grid">
+                        <a href="{% url 'route_planner:index' %}" class="btn btn-outline-info">
+                            <i class="fas fa-route"></i> Plan a Route
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Report traffic jam form submission
+    $("#report-jam-form").submit(function(e) {
+        e.preventDefault();
+        
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: $(this).serialize(),
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    // Show success message
+                    $("#report-jam-form").html('<div class="alert alert-success">' +
+                        '<i class="fas fa-check-circle"></i> ' +
+                        'Traffic jam reported successfully. Thank you for your contribution!' +
+                        '</div>' +
+                        '<div class="d-grid mt-3">' +
+                        '<a href="{% url "route_planner:traffic_jams" %}" class="btn btn-outline-success">Refresh Page</a>' +
+                        '</div>'
+                    );
+                } else {
+                    alert("Error: " + (response.error || "Failed to report traffic jam."));
+                }
+            },
+            error: function(xhr) {
+                var errorMsg = "An error occurred. Please try again.";
+                try {
+                    var response = JSON.parse(xhr.responseText);
+                    if (response.error) {
+                        errorMsg = response.error;
+                    }
+                } catch (e) {}
+                
+                alert("Error: " + errorMsg);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -32,6 +32,9 @@ urlpatterns = [
     # OCR endpoints
     path('ocr/', include('ocr.urls')),
     
+    # Route Planner
+    path('routes/', include('route_planner.urls')),
+    
     # Favicon
     path('favicon.ico', RedirectView.as_view(url='/static/images/favicon.ico')),
 ]
