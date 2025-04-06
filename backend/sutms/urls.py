@@ -32,6 +32,9 @@ urlpatterns = [
     # OCR endpoints
     path('ocr/', include('ocr.urls')),
     
+    # Camera management interface (non-API)
+    path('cameras/', include('cameras.urls')),
+    
     # Route Planner
     path('routes/', include('route_planner.urls')),
     

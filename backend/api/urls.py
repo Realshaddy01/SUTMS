@@ -1,23 +1,19 @@
 """
-URL patterns for the API app.
+URL Configuration for the API app.
 """
 from django.urls import path, include
-from django.http import JsonResponse
 
-app_name = 'api'
-
-# API Health Check endpoint
-def api_health_check(request):
-    return JsonResponse({
-        "status": "ok",
-        "message": "SUTMS API is operational",
-        "version": "1.0.0"
-    })
+from cameras.urls import api_urlpatterns as cameras_api_urlpatterns
 
 urlpatterns = [
-    # Health check endpoint
-    path('health/', api_health_check, name='api_health_check'),
-    
-    # Include app-specific API URLs
-    path('ocr/', include('ocr.urls')),
+    # API version 1 endpoints
+    path('v1/', include([
+        # Include cameras endpoints
+        path('cameras/', include(cameras_api_urlpatterns)),
+        
+        # Include other API endpoints as needed
+        # path('vehicles/', include('vehicles.api_urls')),
+        # path('violations/', include('violations.api_urls')),
+        # path('route-planner/', include('route_planner.api_urls')),
+    ])),
 ]

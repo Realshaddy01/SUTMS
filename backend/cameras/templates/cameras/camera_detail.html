@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ camera.name }} | SUTMS{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Camera Details</h5>
+                </div>
+                <div class="card-body">
+                    <h2 class="h4 mb-3">{{ camera.name }}</h2>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">ID:</span>
+                        <span class="fw-bold">{{ camera.camera_id }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Location:</span>
+                        <span class="fw-bold">{{ camera.location }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Status:</span>
+                        <span>
+                            {% if camera.status == 'online' %}
+                            <span class="badge bg-success">Online</span>
+                            {% elif camera.status == 'connecting' %}
+                            <span class="badge bg-warning">Connecting</span>
+                            {% elif camera.status == 'error' %}
+                            <span class="badge bg-danger">Error</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Offline</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Active:</span>
+                        <span>
+                            {% if camera.is_active %}
+                            <span class="badge bg-success">Yes</span>
+                            {% else %}
+                            <span class="badge bg-danger">No</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Last Capture:</span>
+                        <span>
+                            {% if camera.last_capture_time %}
+                            {{ camera.last_capture_time|date:"Y-m-d H:i:s" }}
+                            {% else %}
+                            Never
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    {% if camera.description %}
+                    <div class="mt-3">
+                        <h5 class="h6">Description</h5>
+                        <p class="text-muted small">{{ camera.description }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <h5 class="h6">Coordinates</h5>
+                        <p class="text-muted small">
+                            Lat: {{ camera.coordinates_lat }}, Lng: {{ camera.coordinates_lng }}
+                        </p>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <a href="{% url 'camera_edit' camera.id %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'camera_delete' camera.id %}" class="btn btn-danger btn-sm">
+                        <i class="fas fa-trash"></i> Delete
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="h2 text-primary">{{ capture_count }}</div>
+                            <div class="text-muted small">Total Captures</div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="h2 text-success">{{ detection_success }}</div>
+                            <div class="text-muted small">Plates Detected</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h2 text-info">{{ success_rate }}%</div>
+                            <div class="text-muted small">Success Rate</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="h2 text-warning">{{ avg_confidence }}%</div>
+                            <div class="text-muted small">Avg Confidence</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button id="simulate-capture" class="btn btn-primary" data-camera-id="{{ camera.camera_id }}">
+                            <i class="fas fa-camera"></i> Simulate Capture
+                        </button>
+                        <a href="{% url 'camera_captures' camera.id %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-images"></i> View All Captures
+                        </a>
+                        <a href="{% url 'camera_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Cameras
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Recent Captures</h5>
+                    <span class="badge bg-primary">{{ captures|length }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for capture in captures %}
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="position-relative">
+                                    <img src="{{ capture.image.url }}" class="card-img-top img-fluid" alt="Camera capture">
+                                    {% if capture.plate_detected %}
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <span class="badge bg-success">Plate Detected</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text text-muted small">
+                                        {{ capture.timestamp|date:"Y-m-d H:i:s" }}
+                                    </p>
+                                    {% if capture.plate_detected %}
+                                    <div class="alert alert-success py-2 mb-0">
+                                        <strong>{{ capture.detected_plate_text }}</strong>
+                                        <div class="progress mt-1" style="height: 5px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ capture.confidence|floatformat:0 }}%;" 
+                                                 aria-valuenow="{{ capture.confidence|floatformat:0 }}" 
+                                                 aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <small class="text-muted">Confidence: {{ capture.confidence|floatformat:1 }}%</small>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-secondary py-2 mb-0">
+                                        <small>No license plate detected</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer">
+                                    <a href="{% url 'capture_detail' capture.id %}" class="btn btn-sm btn-primary">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-5">
+                            <p class="text-muted">No captures available for this camera yet.</p>
+                            <button id="simulate-empty-capture" class="btn btn-primary" data-camera-id="{{ camera.camera_id }}">
+                                Simulate First Capture
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% if captures %}
+                <div class="card-footer text-center">
+                    <a href="{% url 'camera_captures' camera.id %}" class="btn btn-outline-primary">
+                        View All Captures ({{ capture_count }})
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Capture Simulation Modal -->
+<div class="modal fade" id="simulationModal" tabindex="-1" aria-labelledby="simulationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="simulationModalLabel">Simulating Capture</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+                <p>Please wait while we simulate a camera capture...</p>
+                <div id="captureProgress" class="progress" style="height: 20px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                         style="width: 0%"></div>
+                </div>
+                <div id="captureResult" class="mt-3 d-none">
+                    <div class="alert alert-success">
+                        <h6 class="alert-heading">Capture Successful!</h6>
+                        <p id="plateText"></p>
+                        <div class="progress mt-1" style="height: 5px;">
+                            <div id="plateConfidence" class="progress-bar" role="progressbar" 
+                                 style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <small class="text-muted" id="confidenceText">Confidence: 0%</small>
+                    </div>
+                    <div class="text-center mt-2">
+                        <img id="captureImage" src="" class="img-fluid" style="max-height: 200px;">
+                    </div>
+                </div>
+                <div id="captureError" class="mt-3 d-none">
+                    <div class="alert alert-danger">
+                        <h6 class="alert-heading">Capture Failed</h6>
+                        <p id="errorText"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a id="viewCaptureDetails" href="#" class="btn btn-primary d-none">View Details</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle simulate capture buttons
+        document.querySelectorAll('#simulate-capture, #simulate-empty-capture').forEach(button => {
+            button.addEventListener('click', function() {
+                const cameraId = this.getAttribute('data-camera-id');
+                simulateCapture(cameraId);
+            });
+        });
+        
+        function simulateCapture(cameraId) {
+            // Show the simulation modal
+            const modal = new bootstrap.Modal(document.getElementById('simulationModal'));
+            modal.show();
+            
+            // Reset the modal content
+            document.getElementById('captureResult').classList.add('d-none');
+            document.getElementById('captureError').classList.add('d-none');
+            document.getElementById('viewCaptureDetails').classList.add('d-none');
+            
+            // Start the progress animation
+            const progressBar = document.querySelector('#captureProgress .progress-bar');
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = `${Math.min(progress, 90)}%`;
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                }
+            }, 100);
+            
+            // Make the API call to simulate a capture
+            fetch('/api/v1/cameras/simulate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    camera_id: cameraId
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                if (data.success) {
+                    // Show the capture result
+                    document.getElementById('captureResult').classList.remove('d-none');
+                    document.getElementById('plateText').textContent = data.detected_plate_text || 'No plate detected';
+                    
+                    const confidence = data.confidence || 0;
+                    document.getElementById('plateConfidence').style.width = `${confidence}%`;
+                    document.getElementById('confidenceText').textContent = `Confidence: ${confidence.toFixed(1)}%`;
+                    
+                    // Set the link to the capture details
+                    const viewDetailsLink = document.getElementById('viewCaptureDetails');
+                    viewDetailsLink.href = `/cameras/captures/${data.capture_id}/`;
+                    viewDetailsLink.classList.remove('d-none');
+                    
+                    // We would set the capture image here if we had the URL
+                    // document.getElementById('captureImage').src = data.image_url;
+                    
+                    // Reload the page after a short delay to show the new capture
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 3000);
+                } else {
+                    // Show the error
+                    document.getElementById('captureError').classList.remove('d-none');
+                    document.getElementById('errorText').textContent = data.error || 'An unknown error occurred';
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                progressBar.style.width = '100%';
+                
+                // Show the error
+                document.getElementById('captureError').classList.remove('d-none');
+                document.getElementById('errorText').textContent = error.message || 'An unknown error occurred';
+            });
+        }
+        
+        // Helper function to get CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %}

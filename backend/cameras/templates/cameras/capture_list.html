@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}All Camera Captures | SUTMS{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">All Camera Captures</h5>
+                    <a href="{% url 'camera_list' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Cameras
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-primary mb-0">{{ total_captures }}</h5>
+                                    <p class="text-muted small">Total Captures</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-success mb-0">{{ plates_detected }}</h5>
+                                    <p class="text-muted small">Plates Detected</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-info mb-0">{{ detection_rate }}%</h5>
+                                    <p class="text-muted small">Detection Rate</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card mb-3">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-warning mb-0">{{ avg_confidence|floatformat:1 }}%</h5>
+                                    <p class="text-muted small">Avg Confidence</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0">Filter Captures</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="get" class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="camera" class="form-label">Camera</label>
+                                    <select name="camera" id="camera" class="form-select">
+                                        <option value="">All Cameras</option>
+                                        {% for cam in cameras %}
+                                        <option value="{{ cam.id }}" {% if request.GET.camera == cam.id|stringformat:"s" %}selected{% endif %}>
+                                            {{ cam.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="plate_detected" class="form-label">Plate Detection</label>
+                                    <select name="plate_detected" id="plate_detected" class="form-select">
+                                        <option value="">All</option>
+                                        <option value="1" {% if request.GET.plate_detected == '1' %}selected{% endif %}>Detected</option>
+                                        <option value="0" {% if request.GET.plate_detected == '0' %}selected{% endif %}>Not Detected</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="date_from" class="form-label">Date From</label>
+                                    <input type="date" name="date_from" id="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="date_to" class="form-label">Date To</label>
+                                    <input type="date" name="date_to" id="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="plate_text" class="form-label">License Plate Number</label>
+                                    <input type="text" name="plate_text" id="plate_text" class="form-control" 
+                                           placeholder="Search by license plate number" value="{{ request.GET.plate_text }}">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="confidence_min" class="form-label">Min. Confidence (%)</label>
+                                    <input type="number" name="confidence_min" id="confidence_min" class="form-control" 
+                                           min="0" max="100" step="5" value="{{ request.GET.confidence_min }}">
+                                </div>
+                                <div class="col-md-3 mb-3 d-flex align-items-end">
+                                    <div class="d-grid gap-2 w-100">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-filter"></i> Apply Filters
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">All Captures</h6>
+                            {% if is_filtered %}
+                            <span class="badge bg-info">Filtered</span>
+                            {% endif %}
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Camera</th>
+                                        <th>Timestamp</th>
+                                        <th>Image</th>
+                                        <th>Plate Detected</th>
+                                        <th>Plate Number</th>
+                                        <th>Confidence</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for capture in captures %}
+                                    <tr>
+                                        <td>
+                                            <a href="{% url 'camera_detail' capture.camera.id %}">
+                                                {{ capture.camera.name }}
+                                            </a>
+                                        </td>
+                                        <td>{{ capture.timestamp|date:"Y-m-d H:i:s" }}</td>
+                                        <td>
+                                            <a href="{{ capture.image.url }}" target="_blank">
+                                                <img src="{{ capture.image.url }}" height="50" class="img-thumbnail" alt="Capture thumbnail">
+                                            </a>
+                                        </td>
+                                        <td>
+                                            {% if capture.plate_detected %}
+                                            <span class="badge bg-success">Yes</span>
+                                            {% else %}
+                                            <span class="badge bg-danger">No</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if capture.plate_detected %}
+                                            <strong>{{ capture.detected_plate_text }}</strong>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if capture.plate_detected %}
+                                            <div class="progress" style="height: 10px;">
+                                                <div class="progress-bar" role="progressbar" 
+                                                     style="width: {{ capture.confidence|floatformat:0 }}%;" 
+                                                     aria-valuenow="{{ capture.confidence|floatformat:0 }}" 
+                                                     aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <small>{{ capture.confidence|floatformat:1 }}%</small>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'capture_detail' capture.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">
+                                            <p class="text-muted mb-0">No captures available.</p>
+                                            {% if is_filtered %}
+                                            <a href="{% url 'capture_list' %}" class="btn btn-outline-secondary btn-sm mt-2">
+                                                <i class="fas fa-times"></i> Clear Filters
+                                            </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% if is_paginated %}
+                        <div class="card-footer">
+                            <nav aria-label="Capture pagination">
+                                <ul class="pagination justify-content-center mb-0">
+                                    {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if request.GET %}{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}{% endif %}page=1" aria-label="First">
+                                            <span aria-hidden="true">&laquo;&laquo;</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if request.GET %}{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                            <span aria-hidden="true">&laquo;</span>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                    
+                                    {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                    <li class="page-item active"><a class="page-link" href="?{% if request.GET %}{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}{% endif %}page={{ num }}">{{ num }}</a></li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link" href="?{% if request.GET %}{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}{% endif %}page={{ num }}">{{ num }}</a></li>
+                                    {% endif %}
+                                    {% endfor %}
+                                    
+                                    {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if request.GET %}{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}{% endif %}page={{ page_obj.next_page_number }}" aria-label="Next">
+                                            <span aria-hidden="true">&raquo;</span>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if request.GET %}{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}{% endif %}page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                                            <span aria-hidden="true">&raquo;&raquo;</span>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

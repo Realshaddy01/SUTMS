@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     # SUTMS apps
     'accounts',
     'api',
+    'cameras',
     'core',
     'dashboard',
     'ocr',

@@ -17,13 +17,14 @@ def generate_nepali_plate(text="BA 1 PA 1234", output_path="test_plate.jpg"):
     Returns:
         Path to the generated image
     """
-    # Create a blank white image (plate background)
-    plate_width = 440
-    plate_height = 140
+    # Create a blank high-contrast background - optimized for OCR readability
+    plate_width = 600
+    plate_height = 180
+    # White background works best for OCR
     plate = np.ones((plate_height, plate_width, 3), dtype=np.uint8) * 255
     
     # Add black border
-    border_thickness = 4
+    border_thickness = 5
     cv2.rectangle(
         plate,
         (border_thickness, border_thickness),
@@ -32,28 +33,97 @@ def generate_nepali_plate(text="BA 1 PA 1234", output_path="test_plate.jpg"):
         border_thickness
     )
     
-    # Add text
+    # Split the text to position components better
+    parts = text.split()
+    
+    # Font settings for better OCR readability - using even more OCR-friendly font
     font = cv2.FONT_HERSHEY_SIMPLEX
-    font_scale = 2.0
-    font_thickness = 3
     text_color = (0, 0, 0)
-    text_position = (20, 90)
     
-    cv2.putText(
-        plate,
-        text,
-        text_position,
-        font,
-        font_scale,
-        text_color,
-        font_thickness,
-        cv2.LINE_AA
-    )
+    # Calculate text width for better positioning
+    def get_text_width(text, font_face, font_scale, thickness):
+        return cv2.getTextSize(text, font_face, font_scale, thickness)[0][0]
     
-    # Optional: Add some noise and blur to make it more realistic
-    noise = np.random.normal(0, 5, plate.shape).astype(np.uint8)
-    plate = cv2.add(plate, noise)
-    plate = cv2.GaussianBlur(plate, (3, 3), 0)
+    # Draw each part of the license plate text with optimal spacing
+    if len(parts) == 4:  # Format: BA 1 PA 1234
+        # Get total width of all parts
+        p1_width = get_text_width(parts[0], font, 2.5, 4)
+        p2_width = get_text_width(parts[1], font, 2.5, 4)
+        p3_width = get_text_width(parts[2], font, 2.5, 4)
+        p4_width = get_text_width(parts[3], font, 2.5, 5)
+        
+        # Calculate spacing for even distribution
+        total_width = p1_width + p2_width + p3_width + p4_width
+        spacing = (plate_width - 60 - total_width) / 3  # 30px padding on each side
+        
+        # Start position for first part
+        x_pos = 30
+        
+        # Province code (e.g., BA)
+        cv2.putText(
+            plate,
+            parts[0],
+            (x_pos, 100),
+            font,
+            2.5,
+            text_color,
+            4,
+            cv2.LINE_AA
+        )
+        x_pos += p1_width + int(spacing)
+        
+        # Vehicle class (e.g., 1)
+        cv2.putText(
+            plate,
+            parts[1],
+            (x_pos, 100),
+            font,
+            2.5,
+            text_color,
+            4,
+            cv2.LINE_AA
+        )
+        x_pos += p2_width + int(spacing)
+        
+        # Serial letters (e.g., PA)
+        cv2.putText(
+            plate,
+            parts[2],
+            (x_pos, 100),
+            font,
+            2.5,
+            text_color,
+            4,
+            cv2.LINE_AA
+        )
+        x_pos += p3_width + int(spacing)
+        
+        # Number (e.g., 1234)
+        cv2.putText(
+            plate,
+            parts[3],
+            (x_pos, 100),
+            font,
+            2.5,
+            text_color,
+            5,  # Thicker for numbers
+            cv2.LINE_AA
+        )
+    else:
+        # Fallback if text format is different
+        cv2.putText(
+            plate,
+            text,
+            (30, 100),
+            font,
+            2.5,
+            text_color,
+            4,
+            cv2.LINE_AA
+        )
+    
+    # Skip adding noise for maximum OCR readability
+    # Clean images work better with OCR than realistic ones
     
     # Save the image
     cv2.imwrite(output_path, plate)

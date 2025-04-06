@@ -5,16 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}SUTMS - Smart Urban Traffic Management System{% endblock %}</title>
     
-    <!-- Bootstrap CSS -->
+    <!-- Bootstrap CSS CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- Leaflet CSS for maps -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
-    
-    <!-- Custom styles -->
+    <!-- Custom CSS -->
     <style>
         :root {
             --primary-color: #3498db;
@@ -22,131 +19,141 @@
             --accent-color: #e74c3c;
             --light-color: #ecf0f1;
             --dark-color: #2c3e50;
-            --success-color: #2ecc71;
-            --warning-color: #f39c12;
-            --danger-color: #e74c3c;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f8f9fa;
             color: #333;
-            padding-top: 56px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         
         .navbar-brand {
             font-weight: bold;
-            color: var(--light-color) !important;
+            color: var(--primary-color) !important;
         }
         
-        .sidebar {
-            background-color: var(--secondary-color);
-            color: var(--light-color);
-            min-height: calc(100vh - 56px);
-            padding-top: 20px;
+        .navbar {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         
-        .sidebar .nav-link {
-            color: rgba(255, 255, 255, 0.75);
-            margin-bottom: 5px;
-            border-radius: 4px;
-            padding: 10px 15px;
-        }
-        
-        .sidebar .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        
-        .sidebar .nav-link.active {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .sidebar .nav-link i {
-            margin-right: 10px;
-        }
-        
-        .content-wrapper {
-            padding: 20px;
+        .navbar-dark {
+            background-color: var(--dark-color);
         }
         
         .card {
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
             border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: transform 0.3s, box-shadow 0.3s;
         }
         
-        .card-header {
-            background-color: #fff;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            font-weight: bold;
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary, .bg-primary {
+            background-color: var(--primary-color) !important;
+            border-color: var(--primary-color) !important;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9 !important;
+            border-color: #2980b9 !important;
+        }
+        
+        .text-primary {
+            color: var(--primary-color) !important;
+        }
+        
+        .footer {
+            background-color: var(--dark-color);
+            color: #fff;
+            padding: 2rem 0;
+            margin-top: auto;
+        }
+        
+        /* For features and dashboard stats */
+        .feature-icon {
+            width: 4rem;
+            height: 4rem;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--light-color);
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
         }
         
         .stat-card {
-            background-color: white;
             text-align: center;
-            transition: transform 0.3s ease;
+            padding: 1.5rem;
         }
         
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .stat-card .card-title {
-            color: var(--secondary-color);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .stat-card .card-text {
-            color: var(--primary-color);
+        .stat-card .number {
             font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 0;
+            font-weight: 600;
+            color: var(--primary-color);
         }
         
-        .welcome-banner {
-            background-color: var(--primary-color);
-            border-radius: 8px;
+        .stat-card .label {
+            font-size: 1rem;
+            color: #6c757d;
         }
         
-        .quick-actions-card .action-button {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            padding: 15px;
-            font-size: 1.1rem;
+        /* Custom styles for sidebar */
+        .sidebar {
+            position: fixed;
+            top: 56px;
+            bottom: 0;
+            left: 0;
+            z-index: 100;
+            padding: 0;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            background-color: #fff;
+        }
+        
+        .sidebar .nav-link {
             font-weight: 500;
+            color: #333;
+            padding: 0.75rem 1.5rem;
+            border-left: 3px solid transparent;
         }
         
-        .quick-actions-card .action-button i {
-            font-size: 1.5rem;
-            margin-right: 15px;
+        .sidebar .nav-link.active {
+            color: var(--primary-color);
+            border-left: 3px solid var(--primary-color);
+            background-color: rgba(52, 152, 219, 0.1);
         }
         
-        .chart-container {
-            position: relative;
-            height: 300px;
+        .sidebar .nav-link:hover {
+            background-color: rgba(0, 0, 0, 0.05);
         }
         
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            object-fit: cover;
+        .sidebar .nav-link i {
+            margin-right: 0.5rem;
         }
         
-        .dropdown-menu {
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        /* Main content with sidebar */
+        .main-content {
+            margin-left: 250px;
+            padding: 2rem;
         }
         
+        /* Responsive sidebar */
         @media (max-width: 768px) {
             .sidebar {
-                min-height: auto;
+                position: static;
+                height: auto;
+            }
+            
+            .main-content {
+                margin-left: 0;
             }
         }
     </style>
@@ -154,93 +161,134 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Top Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'dashboard:index' %}">
-                <i class="fas fa-traffic-light me-2"></i>SUTMS
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-traffic-light me-2"></i>
+                SUTMS
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard:index' %}">Dashboard</a>
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
+                            <i class="fas fa-home"></i> Home
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'vehicles:list' %}">Vehicles</a>
+                        <a class="nav-link {% if '/dashboard/' in request.path %}active{% endif %}" href="/dashboard/">
+                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'violations:list' %}">Violations</a>
-                    </li>
-                    {% if request.user.is_admin or request.user.is_officer %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'ocr:dashboard' %}">OCR</a>
+                        <a class="nav-link {% if '/vehicles/' in request.path %}active{% endif %}" href="/vehicles/">
+                            <i class="fas fa-car"></i> Vehicles
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'tracking:dashboard' %}">Tracking</a>
+                        <a class="nav-link {% if '/cameras/' in request.path %}active{% endif %}" href="/cameras/">
+                            <i class="fas fa-video"></i> Cameras
+                        </a>
                     </li>
-                    {% endif %}
-                    {% if request.user.is_admin %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'training:dashboard' %}">Training</a>
+                        <a class="nav-link {% if '/routes/' in request.path %}active{% endif %}" href="/routes/">
+                            <i class="fas fa-route"></i> Routes
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/ocr/' in request.path %}active{% endif %}" href="/ocr/">
+                            <i class="fas fa-camera"></i> OCR
+                        </a>
+                    </li>
+                </ul>
+                
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle"></i> 
+                            {% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="/accounts/profile/"><i class="fas fa-id-card me-2"></i>Profile</a></li>
+                            {% if user.is_staff %}
+                            <li><a class="dropdown-item" href="/admin/"><i class="fas fa-cogs me-2"></i>Admin</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/accounts/logout/"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/accounts/login/"><i class="fas fa-sign-in-alt"></i> Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/accounts/signup/"><i class="fas fa-user-plus"></i> Register</a>
                     </li>
                     {% endif %}
                 </ul>
-                
-                {% if user.is_authenticated %}
-                <div class="d-flex align-items-center">
-                    <div class="dropdown">
-                        <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
-                            {% if user.profile_picture %}
-                            <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" class="user-avatar">
-                            {% else %}
-                            <i class="fas fa-user-circle fs-4"></i>
-                            {% endif %}
-                            <span class="ms-2">{{ user.username }}</span>
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog me-2"></i>Profile</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="{% url 'accounts:logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                        </ul>
-                    </div>
-                </div>
-                {% else %}
-                <div class="d-flex">
-                    <a href="{% url 'accounts:login' %}" class="btn btn-outline-light me-2">Login</a>
-                    <a href="{% url 'accounts:register' %}" class="btn btn-primary">Register</a>
-                </div>
-                {% endif %}
             </div>
         </div>
     </nav>
-
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Main Content -->
-            <main class="col-12 content-wrapper">
-                {% if messages %}
-                <div class="messages">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                
-                {% block content %}{% endblock %}
-            </main>
+    
+    <!-- Main Content -->
+    <main>
+        {% if messages %}
+        <div class="container mt-3">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
         </div>
-    </div>
-
-    <!-- Bootstrap JS Bundle with Popper -->
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer mt-auto py-3">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Smart Urban Traffic Management System</h5>
+                    <p>Advanced license plate recognition and traffic management solution.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/" class="text-light">Home</a></li>
+                        <li><a href="/dashboard/" class="text-light">Dashboard</a></li>
+                        <li><a href="/cameras/" class="text-light">Cameras</a></li>
+                        <li><a href="/ocr/" class="text-light">OCR</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Contact</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-envelope me-2"></i> info@sutms.example.com</li>
+                        <li><i class="fas fa-phone me-2"></i> +977 1234567890</li>
+                        <li><i class="fas fa-map-marker-alt me-2"></i> Kathmandu, Nepal</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4 bg-light">
+            <div class="text-center">
+                <p class="mb-0">&copy; {% now "Y" %} SUTMS. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     
+    <!-- Extra JavaScript -->
     {% block extra_js %}{% endblock %}
 </body>
 </html>
