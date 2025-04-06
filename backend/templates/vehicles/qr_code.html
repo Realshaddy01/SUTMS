@@ -1,0 +1,127 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}QR Code for {{ vehicle.license_plate }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .qr-container {
+        text-align: center;
+        padding: 30px;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    .qr-image {
+        max-width: 350px;
+        border: 1px solid #ddd;
+        padding: 20px;
+        background-color: white;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .vehicle-info {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        text-align: left;
+    }
+    .instructions {
+        margin-top: 30px;
+        text-align: left;
+        border-left: 3px solid #007bff;
+        padding-left: 15px;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .print-only {
+            display: block !important;
+        }
+        .container {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+    }
+    .print-only {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <h1 class="mb-0">Vehicle QR Code</h1>
+        <div>
+            <a href="{% url 'vehicles:detail' vehicle.id %}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Back to Vehicle
+            </a>
+            <button onclick="window.print()" class="btn btn-primary">
+                <i class="fas fa-print"></i> Print QR Code
+            </button>
+        </div>
+    </div>
+    
+    <div class="print-only mt-4">
+        <h2 class="text-center">Vehicle QR Code</h2>
+    </div>
+    
+    <div class="qr-container">
+        {% if vehicle.qr_code %}
+            <div>
+                <img src="{{ vehicle.qr_code.url }}" alt="Vehicle QR Code" class="qr-image img-fluid mb-4">
+                <h3 class="mb-3">{{ vehicle.license_plate }}</h3>
+            </div>
+        {% else %}
+            <div class="alert alert-warning">
+                <h4>QR code not generated yet.</h4>
+                <p>Please go back to the vehicle details page and generate a QR code.</p>
+                <a href="{% url 'vehicles:detail' vehicle.id %}" class="btn btn-primary">Back to Vehicle Details</a>
+            </div>
+        {% endif %}
+        
+        <div class="vehicle-info">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl>
+                        <dt>Vehicle</dt>
+                        <dd>{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</dd>
+                        
+                        <dt>Color</dt>
+                        <dd>{{ vehicle.color }}</dd>
+                        
+                        <dt>Registration</dt>
+                        <dd>{{ vehicle.registration_number }}</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl>
+                        <dt>Owner</dt>
+                        <dd>{{ vehicle.owner.get_full_name }}</dd>
+                        
+                        <dt>Registration Expiry</dt>
+                        <dd>{{ vehicle.registration_expiry|default:"Not set" }}</dd>
+                        
+                        <dt>Insurance Expiry</dt>
+                        <dd>{{ vehicle.insurance_expiry|default:"Not set" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        
+        <div class="instructions no-print">
+            <h4>How to use your QR code:</h4>
+            <ol>
+                <li>Print this QR code and keep it in your vehicle or save it on your phone.</li>
+                <li>Present it to traffic officers when requested for quick verification of your vehicle information.</li>
+                <li>Officers can scan this code to instantly access your vehicle information, registration status, and verify your identity.</li>
+                <li>This helps streamline routine traffic checks and verification processes.</li>
+            </ol>
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle me-2"></i> This QR code contains information that uniquely identifies your vehicle in the system. Your personal details are only accessible to authorized traffic officers.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

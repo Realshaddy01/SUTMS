@@ -1,0 +1,132 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block title %}Your Vehicles{% endblock %}
+
+{% block extra_css %}
+<style>
+    .vehicle-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .vehicle-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .vehicle-image {
+        height: 160px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .vehicle-image i {
+        font-size: 4rem;
+        color: #adb5bd;
+    }
+    .status-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">{% if user.is_vehicle_owner %}Your Vehicles{% else %}All Vehicles{% endif %}</h1>
+        <div>
+            <a href="{% url 'dashboard:index' %}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            {% if user.is_vehicle_owner %}
+            <a href="{% url 'vehicles:add' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Vehicle
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if vehicles %}
+    <div class="row">
+        {% for vehicle in vehicles %}
+        <div class="col-md-4 mb-4">
+            <div class="card vehicle-card h-100">
+                {% if vehicle.is_registration_expired or vehicle.is_insurance_expired %}
+                <span class="badge bg-danger status-badge">Expired Documents</span>
+                {% endif %}
+                
+                <div class="vehicle-image">
+                    <i class="fas fa-car"></i>
+                </div>
+                
+                <div class="card-body">
+                    <h5 class="card-title mb-1">{{ vehicle.license_plate }}</h5>
+                    <p class="text-muted small mb-2">{{ vehicle.vehicle_type }}</p>
+                    <p class="card-text mb-1">{{ vehicle.make }} {{ vehicle.model }}, {{ vehicle.year }}</p>
+                    <p class="card-text mb-3"><span class="badge bg-secondary">{{ vehicle.color }}</span></p>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="mb-0 small">
+                                <i class="fas fa-calendar-alt me-1"></i> Registered: {{ vehicle.registered_at|date:"M d, Y" }}
+                            </p>
+                        </div>
+                        
+                        <div>
+                            {% if vehicle.owner == user or user.is_officer or user.is_admin %}
+                            <a href="{% url 'vehicles:qr_code' vehicle.id %}" class="btn btn-sm btn-outline-primary me-1" title="View QR Code">
+                                <i class="fas fa-qrcode"></i>
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'vehicles:detail' vehicle.id %}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-info-circle me-1"></i> Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            {% if vehicle.is_registration_expired %}
+                                <span class="badge bg-danger">Registration Expired</span>
+                            {% elif vehicle.registration_expiry %}
+                                <span class="badge bg-success">Valid until {{ vehicle.registration_expiry|date:"M d, Y" }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">No Registration Date</span>
+                            {% endif %}
+                        </div>
+                        
+                        <div>
+                            {% if not vehicle.is_insured %}
+                                <span class="badge bg-warning text-dark">Not Insured</span>
+                            {% elif vehicle.is_insurance_expired %}
+                                <span class="badge bg-danger">Insurance Expired</span>
+                            {% else %}
+                                <span class="badge bg-success">Insured</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-car fa-4x mb-3 text-muted"></i>
+            <h3 class="mb-3">No Vehicles Found</h3>
+            <p class="mb-4">{% if user.is_vehicle_owner %}You haven't registered any vehicles yet.{% else %}There are no vehicles in the system.{% endif %}</p>
+            
+            {% if user.is_vehicle_owner %}
+            <a href="{% url 'vehicles:add' %}" class="btn btn-primary btn-lg">
+                <i class="fas fa-plus me-2"></i> Register Your First Vehicle
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
