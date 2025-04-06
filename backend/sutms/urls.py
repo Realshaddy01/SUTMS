@@ -23,6 +23,9 @@ urlpatterns = [
     # API endpoints
     path('api/', include('api.urls')),
     
+    # OCR endpoints
+    path('ocr/', include('ocr.urls')),
+    
     # Favicon
     path('favicon.ico', RedirectView.as_view(url='/static/images/favicon.ico')),
 ]

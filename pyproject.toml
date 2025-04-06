@@ -25,4 +25,5 @@ dependencies = [
     "scikit-learn>=1.6.1",
     "tzdata>=2025.2",
     "opencv-python>=4.11.0.86",
+    "requests>=2.32.3",
 ]

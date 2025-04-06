@@ -66,6 +66,22 @@ class Vehicle(models.Model):
     
     qr_code = models.ImageField(_('QR code'), upload_to='vehicle_qrcodes', null=True, blank=True)
     
+    @property
+    def is_registration_expired(self):
+        """Check if the registration has expired."""
+        from django.utils import timezone
+        if not self.registration_expiry:
+            return False
+        return self.registration_expiry < timezone.now().date()
+    
+    @property
+    def is_insurance_expired(self):
+        """Check if the insurance has expired."""
+        from django.utils import timezone
+        if not self.insurance_expiry:
+            return True  # Consider expired if no expiry date
+        return self.insurance_expiry < timezone.now().date()
+    
     def generate_qr_code(self):
         """Generate a QR code for this vehicle and save it."""
         import qrcode
