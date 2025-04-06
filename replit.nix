@@ -1,5 +1,6 @@
 {pkgs}: {
   deps = [
+    pkgs.flutter
     pkgs.postgresql
     pkgs.libGLU
     pkgs.libGL

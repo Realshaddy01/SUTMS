@@ -22,7 +22,8 @@ import 'package:sutms_flutter/screens/payments_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  // Comment out Firebase initialization for web testing
+  // await Firebase.initializeApp();
   runApp(MyApp());
 }
 
