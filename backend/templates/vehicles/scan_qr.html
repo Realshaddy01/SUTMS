@@ -1,253 +1,333 @@
 {% extends 'base/base.html' %}
-{% load static %}
 
-{% block title %}Scan Vehicle QR Code{% endblock %}
+{% block title %}Scan QR Code - SUTMS{% endblock %}
 
 {% block extra_css %}
 <style>
-    #qr-video-container {
-        position: relative;
+    #qr-reader {
         width: 100%;
-        max-width: 600px;
+        max-width: 500px;
         margin: 0 auto;
-        border: 1px solid #ccc;
-        border-radius: 8px;
+    }
+    
+    #qr-reader img {
+        max-width: 100%;
+    }
+    
+    #result-panel {
+        display: none;
+    }
+    
+    .scan-box {
+        position: relative;
+        background-color: white;
+        border-radius: 1rem;
         overflow: hidden;
     }
-    #qr-video {
+    
+    .scan-box::after {
+        content: '';
+        position: absolute;
         width: 100%;
-        height: auto;
-        display: block;
+        height: 2px;
+        background: rgba(255, 0, 0, 0.5);
+        top: 50%;
+        left: 0;
+        transform: translateY(-50%);
+        animation: scan 2s linear infinite;
     }
-    .scan-overlay {
+    
+    @keyframes scan {
+        0% {
+            top: 20%;
+        }
+        50% {
+            top: 80%;
+        }
+        100% {
+            top: 20%;
+        }
+    }
+    
+    .scanner-ui {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        background-color: rgba(0, 0, 0, 0.1);
+        border: 2px solid #3498db;
+        box-sizing: border-box;
         pointer-events: none;
     }
-    .qr-scanner-line {
-        height: 2px;
-        width: 80%;
-        background: linear-gradient(90deg, transparent, #007bff, transparent);
-        animation: scan 2s linear infinite;
+    
+    .scanner-ui .corner {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-color: #3498db;
+        border-style: solid;
+        border-width: 0;
     }
-    @keyframes scan {
-        0% {
-            transform: translateY(-100px);
-        }
-        50% {
-            transform: translateY(100px);
-        }
-        100% {
-            transform: translateY(-100px);
-        }
+    
+    .scanner-ui .corner.top-left {
+        top: 0;
+        left: 0;
+        border-top-width: 4px;
+        border-left-width: 4px;
     }
-    .vehicle-card {
-        border-radius: 8px;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    
+    .scanner-ui .corner.top-right {
+        top: 0;
+        right: 0;
+        border-top-width: 4px;
+        border-right-width: 4px;
     }
-    .vehicle-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    
+    .scanner-ui .corner.bottom-left {
+        bottom: 0;
+        left: 0;
+        border-bottom-width: 4px;
+        border-left-width: 4px;
     }
-    .status-indicator {
-        width: 15px;
-        height: 15px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 5px;
+    
+    .scanner-ui .corner.bottom-right {
+        bottom: 0;
+        right: 0;
+        border-bottom-width: 4px;
+        border-right-width: 4px;
     }
-    .status-valid {
-        background-color: #28a745;
-    }
-    .status-invalid {
-        background-color: #dc3545;
-    }
-    .status-warning {
-        background-color: #ffc107;
-    }
-    .scanner-controls {
-        margin-top: 20px;
-        display: flex;
-        justify-content: center;
-        gap: 10px;
+    
+    .fixed-button {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        z-index: 100;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Scan Vehicle QR Code</h1>
-        <a href="{% url 'dashboard:index' %}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left"></i> Back to Dashboard
-        </a>
+        <h1 class="h3 mb-0 text-gray-800">Scan Vehicle QR Code</h1>
+        
+        <div class="btn-group">
+            <a href="{% url 'dashboard:index' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+            </a>
+        </div>
     </div>
     
     <div class="row">
         <div class="col-lg-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-qrcode me-2"></i>QR Code Scanner</h5>
+            <!-- QR Scanner Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">QR Code Scanner</h6>
                 </div>
                 <div class="card-body">
-                    <div id="qr-video-container" class="mb-3">
-                        <video id="qr-video" playsinline></video>
-                        <div class="scan-overlay">
-                            <div class="qr-scanner-line"></div>
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i> Point your camera at a SUTMS vehicle QR code to verify vehicle and owner information.
+                    </div>
+                    
+                    <div class="scan-box mb-4">
+                        <div id="qr-reader" class="text-center">
+                            <!-- Camera feed will be shown here -->
+                        </div>
+                        <div class="scanner-ui d-none">
+                            <div class="corner top-left"></div>
+                            <div class="corner top-right"></div>
+                            <div class="corner bottom-left"></div>
+                            <div class="corner bottom-right"></div>
                         </div>
                     </div>
                     
-                    <div class="scanner-controls">
-                        <button id="start-scan-btn" class="btn btn-primary">
-                            <i class="fas fa-play me-2"></i>Start Scanner
+                    <div class="text-center">
+                        <button id="startButton" class="btn btn-primary me-2">
+                            <i class="fas fa-camera me-1"></i> Start Scanner
                         </button>
-                        <button id="stop-scan-btn" class="btn btn-secondary" disabled>
-                            <i class="fas fa-stop me-2"></i>Stop Scanner
+                        <button id="stopButton" class="btn btn-danger me-2" style="display: none;">
+                            <i class="fas fa-stop me-1"></i> Stop Scanner
+                        </button>
+                        <button id="flipButton" class="btn btn-secondary" style="display: none;">
+                            <i class="fas fa-sync me-1"></i> Flip Camera
                         </button>
                     </div>
                     
-                    <div class="alert alert-info mt-3">
-                        <i class="fas fa-info-circle me-2"></i>Point the camera at a vehicle QR code to scan. The code should begin with "SUTMS:".
-                    </div>
-                    
-                    <div id="scan-loading" class="text-center mt-3 d-none">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Loading...</span>
+                    <div class="mt-4">
+                        <div class="form-group">
+                            <label for="qrCodeInput">Or enter QR code manually:</label>
+                            <div class="input-group">
+                                <input type="text" id="qrCodeInput" class="form-control" placeholder="Enter QR code (SUTMS:xx:xx)">
+                                <button id="verifyManualButton" class="btn btn-outline-primary">Verify</button>
+                            </div>
+                            <small class="form-text text-muted">Format: SUTMS:license_plate:vehicle_id</small>
                         </div>
-                        <p class="mt-2">Processing QR code...</p>
                     </div>
-                    
-                    <div id="scan-error" class="alert alert-danger mt-3 d-none">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <span id="error-message">Error scanning QR code</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-keyboard me-2"></i>Manual Entry</h5>
-                </div>
-                <div class="card-body">
-                    <form id="manual-entry-form">
-                        <div class="mb-3">
-                            <label for="license-plate" class="form-label">License Plate Number</label>
-                            <input type="text" class="form-control" id="license-plate" placeholder="e.g. BA 1 PA 1234" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-search me-2"></i>Look Up Vehicle
-                        </button>
-                    </form>
                 </div>
             </div>
         </div>
         
         <div class="col-lg-6">
-            <!-- Vehicle Information Section - Will be populated after scan -->
-            <div id="vehicle-info-container" class="d-none">
-                <div class="card vehicle-card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0" id="vehicle-license-plate">-</h5>
-                        <div>
-                            <span id="vehicle-validity-badge" class="badge bg-secondary">Unknown</span>
-                        </div>
+            <!-- Scan Results Card -->
+            <div id="result-panel" class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Vehicle Verification Results</h6>
+                    <div>
+                        <span id="verificationBadge" class="badge badge-pill badge-success">Verified</span>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-sm-6">
-                                <dl>
-                                    <dt>Make & Model</dt>
-                                    <dd id="vehicle-make-model">-</dd>
-                                    
-                                    <dt>Year & Color</dt>
-                                    <dd id="vehicle-year-color">-</dd>
-                                    
-                                    <dt>Registration</dt>
-                                    <dd>
-                                        <span id="vehicle-registration">-</span>
-                                        <span id="registration-status" class="ms-2"></span>
-                                    </dd>
-                                </dl>
-                            </div>
-                            <div class="col-sm-6">
-                                <dl>
-                                    <dt>Owner</dt>
-                                    <dd id="vehicle-owner">-</dd>
-                                    
-                                    <dt>Contact</dt>
-                                    <dd id="owner-contact">-</dd>
-                                    
-                                    <dt>Insurance</dt>
-                                    <dd>
-                                        <span id="vehicle-insurance">-</span>
-                                        <span id="insurance-status" class="ms-2"></span>
-                                    </dd>
-                                </dl>
-                            </div>
-                        </div>
-                        
-                        <div class="d-grid gap-2 mt-3">
-                            <a id="vehicle-details-link" href="#" class="btn btn-sm btn-primary">
-                                <i class="fas fa-car me-2"></i>View Complete Vehicle Details
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Violations Section -->
-                <div class="card mb-4">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Violation History</h5>
-                        <span id="violations-count" class="badge bg-secondary">0</span>
-                    </div>
-                    <div class="card-body">
-                        <div id="violations-list">
-                            <div class="text-center py-4">
-                                <p class="text-muted">No violations found for this vehicle.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="d-grid gap-2 mt-3">
-                            <a id="report-violation-link" href="#" class="btn btn-danger">
-                                <i class="fas fa-plus me-2"></i>Report New Violation
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Instructions when no vehicle is scanned -->
-            <div id="scan-instructions" class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Instructions</h5>
                 </div>
                 <div class="card-body">
-                    <div class="text-center mb-4">
-                        <i class="fas fa-qrcode fa-5x text-primary mb-3"></i>
-                        <h4>Ready to Scan Vehicle QR Code</h4>
+                    <div id="loader" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Verifying QR code...</p>
                     </div>
                     
-                    <ol>
-                        <li class="mb-2">Click "Start Scanner" to begin the QR code scanning process.</li>
-                        <li class="mb-2">Point your camera at the vehicle's QR code.</li>
-                        <li class="mb-2">The system will automatically detect and verify the QR code.</li>
-                        <li class="mb-2">Vehicle information, ownership details, and violation history will be displayed.</li>
-                        <li class="mb-2">You can also manually enter a license plate number if the QR code is not available.</li>
-                    </ol>
+                    <div id="error-message" class="alert alert-danger" style="display: none;">
+                        <i class="fas fa-exclamation-circle me-2"></i> <span id="error-text"></span>
+                    </div>
                     
-                    <div class="alert alert-warning mt-3">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        <strong>Important:</strong> Always verify the information displayed with the physical vehicle and documents.
+                    <div id="result-content" style="display: none;">
+                        <ul class="nav nav-tabs" id="resultTabs" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="vehicle-tab" data-bs-toggle="tab" href="#vehicle" role="tab">
+                                    <i class="fas fa-car me-1"></i> Vehicle
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="owner-tab" data-bs-toggle="tab" href="#owner" role="tab">
+                                    <i class="fas fa-user me-1"></i> Owner
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="violations-tab" data-bs-toggle="tab" href="#violations" role="tab">
+                                    <i class="fas fa-exclamation-triangle me-1"></i> Violations
+                                </a>
+                            </li>
+                        </ul>
+                        
+                        <div class="tab-content p-3 border border-top-0 rounded-bottom" id="resultTabContent">
+                            <!-- Vehicle Information Tab -->
+                            <div class="tab-pane fade show active" id="vehicle" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="fw-bold">License Plate:</label>
+                                            <p id="license-plate" class="mb-1"></p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Vehicle Type:</label>
+                                            <p id="vehicle-type" class="mb-1"></p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Make/Model:</label>
+                                            <p id="make-model" class="mb-1"></p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Year:</label>
+                                            <p id="year" class="mb-1"></p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Color:</label>
+                                            <p id="color" class="mb-1"></p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Registration Number:</label>
+                                            <p id="registration-number" class="mb-1"></p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Registration Status:</label>
+                                            <p id="registration-status" class="mb-1"></p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="fw-bold">Insurance Status:</label>
+                                            <p id="insurance-status" class="mb-1"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="vehicleComplianceAlert" class="alert alert-success mt-3">
+                                    <i class="fas fa-check-circle me-2"></i> This vehicle is compliant with all regulations.
+                                </div>
+                            </div>
+                            
+                            <!-- Owner Information Tab -->
+                            <div class="tab-pane fade" id="owner" role="tabpanel">
+                                <div class="text-center mb-4">
+                                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px;">
+                                        <span id="owner-initial" class="text-white fw-bold h1"></span>
+                                    </div>
+                                    <h5 id="owner-name" class="mt-3"></h5>
+                                </div>
+                                
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span><i class="fas fa-envelope me-2"></i> Email</span>
+                                        <span id="owner-email"></span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span><i class="fas fa-phone me-2"></i> Phone</span>
+                                        <span id="owner-phone"></span>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Violations Tab -->
+                            <div class="tab-pane fade" id="violations" role="tabpanel">
+                                <div id="violations-container">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="mb-0">Recent Violations</h6>
+                                        <span class="badge bg-primary" id="violations-count">0</span>
+                                    </div>
+                                    
+                                    <div id="no-violations" class="text-center py-4">
+                                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                                        <p>No violations found for this vehicle</p>
+                                    </div>
+                                    
+                                    <div id="violations-list" style="display: none;">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Date</th>
+                                                        <th>Violation Type</th>
+                                                        <th>Status</th>
+                                                        <th>Fine Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="violations-table-body">
+                                                    <!-- Violation entries will be added here dynamically -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="unpaid-violations-alert" class="alert alert-warning mt-3" style="display: none;">
+                                        <i class="fas fa-exclamation-triangle me-2"></i> This vehicle has unpaid violations.
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <button id="reportViolationBtn" class="btn btn-danger">
+                                        <i class="fas fa-exclamation-triangle me-2"></i> Report New Violation
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <a id="viewVehicleBtn" href="#" class="btn btn-primary">
+                                <i class="fas fa-eye me-1"></i> View Full Vehicle Details
+                            </a>
+                            <button id="newScanBtn" class="btn btn-secondary ms-2">
+                                <i class="fas fa-redo me-1"></i> Scan Another
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -257,282 +337,318 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- Include QR Scanner Library -->
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Elements
-    const video = document.getElementById('qr-video');
-    const startScanBtn = document.getElementById('start-scan-btn');
-    const stopScanBtn = document.getElementById('stop-scan-btn');
-    const scanLoading = document.getElementById('scan-loading');
-    const scanError = document.getElementById('scan-error');
-    const errorMessage = document.getElementById('error-message');
-    const vehicleInfoContainer = document.getElementById('vehicle-info-container');
-    const scanInstructions = document.getElementById('scan-instructions');
-    const manualEntryForm = document.getElementById('manual-entry-form');
-    
-    // QR Scanner variables
-    let canvasElement;
-    let canvas;
-    let scanning = false;
-    let videoStream;
-    
-    // Start QR Scanner
-    startScanBtn.addEventListener('click', function() {
-        startScanner();
-    });
-    
-    // Stop QR Scanner
-    stopScanBtn.addEventListener('click', function() {
-        stopScanner();
-    });
-    
-    // Manual entry form submit
-    manualEntryForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const licensePlate = document.getElementById('license-plate').value;
-        if (licensePlate) {
-            searchVehicle(licensePlate);
-        }
-    });
-    
-    // Start the QR scanner
-    function startScanner() {
-        // Create canvas element if it doesn't exist
-        if (!canvasElement) {
-            canvasElement = document.createElement("canvas");
-            canvas = canvasElement.getContext("2d");
+    document.addEventListener('DOMContentLoaded', function() {
+        let html5QrCode;
+        let scanning = false;
+        const qrReader = document.getElementById('qr-reader');
+        const resultPanel = document.getElementById('result-panel');
+        const loader = document.getElementById('loader');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const resultContent = document.getElementById('result-content');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const flipButton = document.getElementById('flipButton');
+        const verifyManualButton = document.getElementById('verifyManualButton');
+        const qrCodeInput = document.getElementById('qrCodeInput');
+        const scannerUI = document.querySelector('.scanner-ui');
+        
+        // Initialize QR Scanner
+        function initScanner() {
+            html5QrCode = new Html5Qrcode("qr-reader");
         }
         
-        // Request camera access
-        navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "environment" } 
-        }).then(function(stream) {
-            videoStream = stream;
-            video.srcObject = stream;
-            video.setAttribute("playsinline", true);
-            video.play();
-            scanning = true;
-            requestAnimationFrame(tick);
+        // Start scanning
+        function startScanning() {
+            // Show the scanner UI overlay
+            if (scannerUI) scannerUI.classList.remove('d-none');
             
-            startScanBtn.disabled = true;
-            stopScanBtn.disabled = false;
-        }).catch(function(err) {
-            showError("Camera access denied: " + err.message);
-        });
-    }
-    
-    // Stop the QR scanner
-    function stopScanner() {
-        if (videoStream) {
-            videoStream.getTracks().forEach(track => track.stop());
-            video.srcObject = null;
-            scanning = false;
+            const config = {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+            };
             
-            startScanBtn.disabled = false;
-            stopScanBtn.disabled = true;
-        }
-    }
-    
-    // Process video frames to detect QR codes
-    function tick() {
-        if (!scanning) return;
-        
-        if (video.readyState === video.HAVE_ENOUGH_DATA) {
-            canvasElement.height = video.videoHeight;
-            canvasElement.width = video.videoWidth;
-            canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-            
-            const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
-            const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                inversionAttempts: "dontInvert",
+            html5QrCode.start(
+                { facingMode: "environment" },
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                scanning = true;
+                startButton.style.display = 'none';
+                stopButton.style.display = 'inline-block';
+                flipButton.style.display = 'inline-block';
+            }).catch((err) => {
+                console.error("Failed to start scanner", err);
+                alert("Could not start camera. Please check camera permissions.");
+                if (scannerUI) scannerUI.classList.add('d-none');
             });
-            
-            if (code) {
-                if (code.data.startsWith('SUTMS:')) {
-                    // Stop scanning and process the QR code
-                    stopScanner();
-                    processQRCode(code.data);
-                }
+        }
+        
+        // Stop scanning
+        function stopScanning() {
+            if (html5QrCode && scanning) {
+                html5QrCode.stop().then(() => {
+                    scanning = false;
+                    startButton.style.display = 'inline-block';
+                    stopButton.style.display = 'none';
+                    flipButton.style.display = 'none';
+                    if (scannerUI) scannerUI.classList.add('d-none');
+                }).catch((err) => {
+                    console.error("Failed to stop scanner", err);
+                });
             }
         }
         
-        requestAnimationFrame(tick);
-    }
-    
-    // Process the QR code data
-    function processQRCode(qrData) {
-        showLoading();
-        hideError();
-        
-        fetch('{% url "vehicles:api_verify_qr" code="PLACEHOLDER" %}'.replace("PLACEHOLDER", encodeURIComponent(qrData)))
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
+        // Flip camera
+        function flipCamera() {
+            stopScanning();
+            setTimeout(() => {
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                };
                 
-                if (data.verified) {
-                    displayVehicleInfo(data);
-                } else {
-                    showError(data.message || "Invalid QR code");
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                showError("Error processing QR code: " + error.message);
-            });
-    }
-    
-    // Search for vehicle by license plate
-    function searchVehicle(licensePlate) {
-        showLoading();
-        hideError();
-        
-        fetch(`{% url "vehicles:api_search" %}?license_plate=${encodeURIComponent(licensePlate)}`)
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                
-                if (data.vehicles && data.vehicles.length > 0) {
-                    const vehicleId = data.vehicles[0].id;
-                    window.location.href = `/vehicles/${vehicleId}/`;
-                } else {
-                    showError("No vehicle found with this license plate");
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                showError("Error searching vehicle: " + error.message);
-            });
-    }
-    
-    // Display vehicle information
-    function displayVehicleInfo(data) {
-        // Show vehicle info container and hide instructions
-        vehicleInfoContainer.classList.remove('d-none');
-        scanInstructions.classList.add('d-none');
-        
-        // Basic vehicle info
-        document.getElementById('vehicle-license-plate').textContent = data.vehicle.license_plate;
-        document.getElementById('vehicle-make-model').textContent = `${data.vehicle.make} ${data.vehicle.model}`;
-        document.getElementById('vehicle-year-color').textContent = `${data.vehicle.year}, ${data.vehicle.color}`;
-        document.getElementById('vehicle-registration').textContent = data.vehicle.registration_number || 'Not available';
-        document.getElementById('vehicle-details-link').href = `/vehicles/${data.vehicle.id}/`;
-        
-        // Owner info
-        document.getElementById('vehicle-owner').textContent = data.owner.name;
-        let contactInfo = '';
-        if (data.owner.phone) {
-            contactInfo += data.owner.phone;
-        }
-        if (data.owner.email) {
-            if (contactInfo) contactInfo += ' / ';
-            contactInfo += data.owner.email;
-        }
-        document.getElementById('owner-contact').textContent = contactInfo || 'Not available';
-        
-        // Registration status
-        const registrationStatus = document.getElementById('registration-status');
-        if (data.vehicle.is_registration_expired) {
-            registrationStatus.innerHTML = '<span class="badge bg-danger">Expired</span>';
-        } else if (data.vehicle.registration_expiry) {
-            registrationStatus.innerHTML = '<span class="badge bg-success">Valid</span>';
-        } else {
-            registrationStatus.innerHTML = '<span class="badge bg-secondary">Unknown</span>';
+                html5QrCode.start(
+                    { facingMode: scanning ? "environment" : "user" },
+                    config,
+                    onScanSuccess,
+                    onScanFailure
+                ).then(() => {
+                    scanning = true;
+                    startButton.style.display = 'none';
+                    stopButton.style.display = 'inline-block';
+                    flipButton.style.display = 'inline-block';
+                    if (scannerUI) scannerUI.classList.remove('d-none');
+                }).catch((err) => {
+                    console.error("Failed to flip camera", err);
+                    alert("Could not switch camera. Please try again.");
+                });
+            }, 500);
         }
         
-        // Insurance status
-        const insuranceStatus = document.getElementById('insurance-status');
-        if (data.vehicle.is_insurance_expired) {
-            insuranceStatus.innerHTML = '<span class="badge bg-danger">Expired</span>';
-            document.getElementById('vehicle-insurance').textContent = 'Expired';
-        } else if (data.vehicle.insurance_expiry) {
-            insuranceStatus.innerHTML = '<span class="badge bg-success">Valid</span>';
-            document.getElementById('vehicle-insurance').textContent = 'Valid until ' + data.vehicle.insurance_expiry;
-        } else {
-            insuranceStatus.innerHTML = '<span class="badge bg-warning text-dark">Unknown</span>';
-            document.getElementById('vehicle-insurance').textContent = 'Status unknown';
-        }
-        
-        // Overall validity badge
-        const validityBadge = document.getElementById('vehicle-validity-badge');
-        if (data.is_valid) {
-            validityBadge.className = 'badge bg-success';
-            validityBadge.textContent = 'Valid';
-        } else {
-            validityBadge.className = 'badge bg-danger';
-            validityBadge.textContent = 'Invalid';
-        }
-        
-        // Violations
-        const violationsCount = document.getElementById('violations-count');
-        const violationsList = document.getElementById('violations-list');
-        
-        if (data.violations.total > 0) {
-            violationsCount.textContent = data.violations.total;
-            violationsCount.className = 'badge bg-danger';
+        // Handle successful scans
+        function onScanSuccess(decodedText, decodedResult) {
+            console.log("QR code detected:", decodedText);
             
-            let violationsHtml = '';
+            // Stop scanning after a successful scan
+            stopScanning();
             
-            if (data.violations.recent && data.violations.recent.length > 0) {
-                violationsHtml = '<div class="list-group">';
-                
-                data.violations.recent.forEach(violation => {
-                    let statusClass = 'secondary';
-                    if (violation.status === 'issued') statusClass = 'warning';
-                    else if (violation.status === 'paid') statusClass = 'success';
-                    else if (violation.status === 'appealed') statusClass = 'info';
+            // Verify the QR code format and process it
+            verifyQRCode(decodedText);
+        }
+        
+        // Handle scan failures silently - only log for debugging
+        function onScanFailure(error) {
+            // We don't need to show scan failures to the user
+            // console.error("QR code scan error:", error);
+        }
+        
+        // Verify QR code with the server
+        function verifyQRCode(code) {
+            // Show result panel and loader
+            resultPanel.style.display = 'block';
+            loader.style.display = 'block';
+            errorMessage.style.display = 'none';
+            resultContent.style.display = 'none';
+            
+            // Check if the code format is valid
+            if (!code || !code.startsWith('SUTMS:')) {
+                showError('Invalid QR code format. QR codes should start with "SUTMS:"');
+                return;
+            }
+            
+            // Make API request to verify the QR code
+            fetch(`/vehicles/api/verify-qr/${encodeURIComponent(code)}/`)
+                .then(response => response.json())
+                .then(data => {
+                    loader.style.display = 'none';
                     
-                    violationsHtml += `
-                    <div class="list-group-item">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1">${violation.type}</h6>
-                            <small class="text-muted">${violation.date}</small>
-                        </div>
-                        <p class="mb-1">Fine: ${violation.fine_amount}</p>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="badge bg-${statusClass}">${violation.status}</span>
-                        </div>
-                    </div>`;
+                    if (data.verified) {
+                        // Display the verification results
+                        displayResults(data);
+                    } else {
+                        showError(data.message || 'Failed to verify QR code');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error verifying QR code:', error);
+                    showError('Error connecting to server. Please try again.');
+                });
+        }
+        
+        // Display verification results
+        function displayResults(data) {
+            resultContent.style.display = 'block';
+            
+            // Update verification badge
+            const verificationBadge = document.getElementById('verificationBadge');
+            if (data.is_valid) {
+                verificationBadge.className = 'badge bg-success';
+                verificationBadge.textContent = 'Verified';
+            } else {
+                verificationBadge.className = 'badge bg-warning';
+                verificationBadge.textContent = 'Issues Found';
+            }
+            
+            // Vehicle tab data
+            document.getElementById('license-plate').textContent = data.vehicle.license_plate;
+            document.getElementById('vehicle-type').textContent = data.vehicle.vehicle_type;
+            document.getElementById('make-model').textContent = `${data.vehicle.make} ${data.vehicle.model}`;
+            document.getElementById('year').textContent = data.vehicle.year;
+            document.getElementById('color').textContent = data.vehicle.color;
+            document.getElementById('registration-number').textContent = data.vehicle.registration_number || 'Not provided';
+            
+            // Registration status
+            const registrationStatus = document.getElementById('registration-status');
+            if (data.vehicle.is_registration_expired) {
+                registrationStatus.innerHTML = `<span class="badge bg-danger">Expired</span> since ${data.vehicle.registration_expiry || 'unknown date'}`;
+            } else if (data.vehicle.registration_expiry) {
+                registrationStatus.innerHTML = `<span class="badge bg-success">Valid</span> until ${data.vehicle.registration_expiry}`;
+            } else {
+                registrationStatus.innerHTML = 'Status unknown';
+            }
+            
+            // Insurance status
+            const insuranceStatus = document.getElementById('insurance-status');
+            if (data.vehicle.is_insurance_expired) {
+                insuranceStatus.innerHTML = `<span class="badge bg-danger">Expired</span> ${data.vehicle.insurance_expiry ? 'since ' + data.vehicle.insurance_expiry : ''}`;
+            } else if (data.vehicle.insurance_expiry) {
+                insuranceStatus.innerHTML = `<span class="badge bg-success">Valid</span> until ${data.vehicle.insurance_expiry}`;
+            } else {
+                insuranceStatus.innerHTML = '<span class="badge bg-warning">Not Provided</span>';
+            }
+            
+            // Compliance alert
+            const vehicleComplianceAlert = document.getElementById('vehicleComplianceAlert');
+            if (data.is_valid) {
+                vehicleComplianceAlert.className = 'alert alert-success mt-3';
+                vehicleComplianceAlert.innerHTML = '<i class="fas fa-check-circle me-2"></i> This vehicle is compliant with all regulations.';
+            } else {
+                vehicleComplianceAlert.className = 'alert alert-danger mt-3';
+                vehicleComplianceAlert.innerHTML = '<i class="fas fa-exclamation-circle me-2"></i> This vehicle has compliance issues that need attention.';
+            }
+            
+            // Owner tab data
+            document.getElementById('owner-name').textContent = data.owner.name;
+            document.getElementById('owner-initial').textContent = data.owner.name.charAt(0).toUpperCase();
+            document.getElementById('owner-email').textContent = data.owner.email;
+            document.getElementById('owner-phone').textContent = data.owner.phone || 'Not provided';
+            
+            // Violations tab data
+            const violationsCount = document.getElementById('violations-count');
+            const noViolations = document.getElementById('no-violations');
+            const violationsList = document.getElementById('violations-list');
+            const violationsTableBody = document.getElementById('violations-table-body');
+            const unpaidViolationsAlert = document.getElementById('unpaid-violations-alert');
+            
+            violationsCount.textContent = data.violations.total;
+            
+            if (data.violations.total > 0) {
+                noViolations.style.display = 'none';
+                violationsList.style.display = 'block';
+                
+                // Clear existing violations
+                violationsTableBody.innerHTML = '';
+                
+                // Add violation entries
+                data.violations.recent.forEach(violation => {
+                    const row = document.createElement('tr');
+                    
+                    const dateCell = document.createElement('td');
+                    dateCell.textContent = violation.date;
+                    
+                    const typeCell = document.createElement('td');
+                    typeCell.textContent = violation.type;
+                    
+                    const statusCell = document.createElement('td');
+                    const statusBadge = document.createElement('span');
+                    statusBadge.className = 'badge ' + 
+                        (violation.status === 'paid' ? 'bg-success' : 
+                         violation.status === 'pending' ? 'bg-warning' : 'bg-secondary');
+                    statusBadge.textContent = violation.status.replace('_', ' ').toUpperCase();
+                    statusCell.appendChild(statusBadge);
+                    
+                    const fineCell = document.createElement('td');
+                    fineCell.textContent = `NPR ${violation.fine_amount}`;
+                    
+                    row.appendChild(dateCell);
+                    row.appendChild(typeCell);
+                    row.appendChild(statusCell);
+                    row.appendChild(fineCell);
+                    
+                    violationsTableBody.appendChild(row);
                 });
                 
-                violationsHtml += '</div>';
+                // Show unpaid violations alert if needed
+                if (data.violations.has_unpaid) {
+                    unpaidViolationsAlert.style.display = 'block';
+                } else {
+                    unpaidViolationsAlert.style.display = 'none';
+                }
             } else {
-                violationsHtml = '<p class="text-center py-3">No recent violations found.</p>';
+                noViolations.style.display = 'block';
+                violationsList.style.display = 'none';
+                unpaidViolationsAlert.style.display = 'none';
             }
             
-            violationsList.innerHTML = violationsHtml;
-        } else {
-            violationsCount.textContent = '0';
-            violationsCount.className = 'badge bg-success';
-            violationsList.innerHTML = '<div class="text-center py-4"><p class="text-muted">No violations found for this vehicle.</p></div>';
+            // Set the "View Full Details" button URL
+            const viewVehicleBtn = document.getElementById('viewVehicleBtn');
+            viewVehicleBtn.href = `/vehicles/${data.vehicle.id}/`;
+            
+            // Set the "Report Violation" button handler
+            const reportViolationBtn = document.getElementById('reportViolationBtn');
+            reportViolationBtn.onclick = function() {
+                // Redirect to the violation reporting page
+                window.location.href = `/violations/report/${data.vehicle.id}/`;
+            };
         }
         
-        // Set the report violation link
-        document.getElementById('report-violation-link').href = `/violations/report/?vehicle_id=${data.vehicle.id}`;
-    }
-    
-    // Show loading indicator
-    function showLoading() {
-        scanLoading.classList.remove('d-none');
-    }
-    
-    // Hide loading indicator
-    function hideLoading() {
-        scanLoading.classList.add('d-none');
-    }
-    
-    // Show error message
-    function showError(message) {
-        errorMessage.textContent = message;
-        scanError.classList.remove('d-none');
-    }
-    
-    // Hide error message
-    function hideError() {
-        scanError.classList.add('d-none');
-    }
-});
+        // Show error message
+        function showError(message) {
+            loader.style.display = 'none';
+            errorMessage.style.display = 'block';
+            errorText.textContent = message;
+            resultContent.style.display = 'none';
+        }
+        
+        // Reset the scanning UI
+        function resetScan() {
+            resultPanel.style.display = 'none';
+            qrCodeInput.value = '';
+        }
+        
+        // Initialize the scanner when the page loads
+        initScanner();
+        
+        // Event listeners
+        startButton.addEventListener('click', startScanning);
+        stopButton.addEventListener('click', stopScanning);
+        flipButton.addEventListener('click', flipCamera);
+        
+        // Manual QR code verification
+        verifyManualButton.addEventListener('click', function() {
+            const code = qrCodeInput.value.trim();
+            if (code) {
+                verifyQRCode(code);
+            } else {
+                alert('Please enter a QR code value');
+            }
+        });
+        
+        // New scan button
+        document.getElementById('newScanBtn').addEventListener('click', function() {
+            resetScan();
+        });
+        
+        // If user leaves the page, make sure to stop the scanner
+        window.addEventListener('beforeunload', function() {
+            if (html5QrCode && scanning) {
+                html5QrCode.stop().catch(err => console.error(err));
+            }
+        });
+    });
 </script>
 {% endblock %}

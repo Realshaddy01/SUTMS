@@ -1,288 +1,349 @@
 {% extends 'base/base.html' %}
-{% load static %}
 
-{% block title %}{{ vehicle.license_plate }} Details{% endblock %}
-
-{% block extra_css %}
-<style>
-    .qr-code-container {
-        text-align: center;
-        margin: 20px 0;
-    }
-    .qr-code-image {
-        max-width: 250px;
-        border: 1px solid #ddd;
-        padding: 10px;
-        background-color: white;
-    }
-    .status-badge {
-        font-size: 85%;
-        padding: 0.25em 0.6em;
-    }
-</style>
-{% endblock %}
+{% block title %}{{ vehicle.license_plate }} - SUTMS{% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Vehicle Details</h1>
-        <div>
-            <a href="{% url 'vehicles:list' %}" class="btn btn-outline-secondary me-2">
-                <i class="fas fa-arrow-left"></i> Back to Vehicles
-            </a>
-            {% if user.is_vehicle_owner and vehicle.owner == user %}
-            <a href="{% url 'vehicles:edit' vehicle.id %}" class="btn btn-primary">
-                <i class="fas fa-edit"></i> Edit Vehicle
-            </a>
+        <h1 class="h3 mb-0 text-gray-800">
+            Vehicle Details: {{ vehicle.license_plate }}
+        </h1>
+        
+        <div class="btn-group">
+            {% if request.user.is_vehicle_owner and request.user == vehicle.owner %}
+                <a href="{% url 'vehicles:edit' vehicle.id %}" class="btn btn-warning">
+                    <i class="fas fa-edit me-2"></i> Edit Vehicle
+                </a>
+                <a href="{% url 'vehicles:qr_code' vehicle.id %}" class="btn btn-primary">
+                    <i class="fas fa-qrcode me-2"></i> QR Code
+                </a>
             {% endif %}
+            
+            {% if request.user.is_officer or request.user.is_admin %}
+                <a href="#" class="btn btn-danger" id="reportViolationBtn">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Report Violation
+                </a>
+            {% endif %}
+            
+            <a href="{% url 'vehicles:list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to List
+            </a>
         </div>
     </div>
-
+    
     <div class="row">
-        <!-- Vehicle Details -->
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">{{ vehicle.license_plate }}</h5>
-                    <span class="badge bg-dark">{{ vehicle.vehicle_type }}</span>
+        <!-- Vehicle Details Card -->
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Vehicle Information</h6>
+                    <span class="badge {% if vehicle.is_registration_expired or vehicle.is_insurance_expired %}bg-danger{% else %}bg-success{% endif %}">
+                        {% if vehicle.is_registration_expired or vehicle.is_insurance_expired %}Non-compliant{% else %}Compliant{% endif %}
+                    </span>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <dl>
-                                <dt>Make & Model</dt>
-                                <dd>{{ vehicle.make }} {{ vehicle.model }}</dd>
-                                
-                                <dt>Year</dt>
-                                <dd>{{ vehicle.year }}</dd>
-                                
-                                <dt>Color</dt>
-                                <dd>{{ vehicle.color }}</dd>
-                                
-                                <dt>Registration Number</dt>
-                                <dd>{{ vehicle.registration_number }}</dd>
-                            </dl>
+                            <div class="mb-3">
+                                <label class="fw-bold">License Plate:</label>
+                                <p>{{ vehicle.license_plate }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">Vehicle Type:</label>
+                                <p>{{ vehicle.vehicle_type.name }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">Make/Model:</label>
+                                <p>{{ vehicle.make }} {{ vehicle.model }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">Year:</label>
+                                <p>{{ vehicle.year }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">Color:</label>
+                                <p>{{ vehicle.color }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">Registration Number:</label>
+                                <p>{{ vehicle.registration_number|default:"Not provided" }}</p>
+                            </div>
                         </div>
                         <div class="col-md-6">
-                            <dl>
-                                <dt>Registration Expiry</dt>
-                                <dd>
+                            <div class="mb-3">
+                                <label class="fw-bold">Registration Expiry:</label>
+                                <p>
                                     {% if vehicle.registration_expiry %}
-                                        {{ vehicle.registration_expiry }}
+                                        {{ vehicle.registration_expiry|date:"F d, Y" }}
                                         {% if vehicle.is_registration_expired %}
-                                            <span class="badge bg-danger status-badge">Expired</span>
-                                        {% else %}
-                                            <span class="badge bg-success status-badge">Valid</span>
+                                            <span class="badge bg-danger">Expired</span>
                                         {% endif %}
                                     {% else %}
-                                        <span class="text-muted">Not set</span>
+                                        Not provided
                                     {% endif %}
-                                </dd>
-                                
-                                <dt>Insurance Provider</dt>
-                                <dd>{{ vehicle.insurance_provider|default:"Not specified" }}</dd>
-                                
-                                <dt>Insurance Expiry</dt>
-                                <dd>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">Insurance Status:</label>
+                                <p>
+                                    {% if vehicle.is_insured %}
+                                        Insured with {{ vehicle.insurance_provider|default:"provider not specified" }}
+                                    {% else %}
+                                        Not insured
+                                    {% endif %}
+                                    {% if vehicle.is_insurance_expired %}
+                                        <span class="badge bg-danger">Expired</span>
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">Insurance Expiry:</label>
+                                <p>
                                     {% if vehicle.insurance_expiry %}
-                                        {{ vehicle.insurance_expiry }}
-                                        {% if vehicle.is_insurance_expired %}
-                                            <span class="badge bg-danger status-badge">Expired</span>
-                                        {% else %}
-                                            <span class="badge bg-success status-badge">Valid</span>
-                                        {% endif %}
+                                        {{ vehicle.insurance_expiry|date:"F d, Y" }}
                                     {% else %}
-                                        <span class="text-muted">Not set</span>
+                                        Not provided
                                     {% endif %}
-                                </dd>
-                                
-                                <dt>Registered At</dt>
-                                <dd>{{ vehicle.registered_at|date:"F j, Y" }}</dd>
-                            </dl>
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">Policy Number:</label>
+                                <p>{{ vehicle.insurance_policy_number|default:"Not provided" }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">VIN:</label>
+                                <p>{{ vehicle.vin|default:"Not provided" }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="fw-bold">Registered At:</label>
+                                <p>{{ vehicle.registered_at|date:"F d, Y H:i" }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
+            
             <!-- Documents Section -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Vehicle Documents</h5>
-                    {% if user.is_vehicle_owner and vehicle.owner == user %}
-                    <a href="{% url 'vehicles:add_document' vehicle.id %}" class="btn btn-sm btn-primary">
-                        <i class="fas fa-plus"></i> Add Document
-                    </a>
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">Vehicle Documents</h6>
+                    {% if request.user.is_vehicle_owner and request.user == vehicle.owner %}
+                        <a href="{% url 'vehicles:add_document' vehicle.id %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus-circle me-1"></i> Add Document
+                        </a>
                     {% endif %}
                 </div>
                 <div class="card-body">
                     {% if documents %}
                         <div class="table-responsive">
-                            <table class="table table-striped">
+                            <table class="table table-bordered">
                                 <thead>
                                     <tr>
                                         <th>Type</th>
                                         <th>Title</th>
                                         <th>Expiry Date</th>
-                                        <th>Status</th>
+                                        <th>Verification</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for doc in documents %}
-                                    <tr>
-                                        <td>{{ doc.get_document_type_display }}</td>
-                                        <td>{{ doc.title }}</td>
-                                        <td>{{ doc.expiry_date|default:"N/A" }}</td>
-                                        <td>
-                                            {% if doc.is_verified %}
-                                                <span class="badge bg-success">Verified</span>
-                                            {% else %}
-                                                <span class="badge bg-warning text-dark">Pending</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if doc.document_file %}
-                                                <a href="{{ doc.document_file.url }}" class="btn btn-sm btn-info" target="_blank">
-                                                    <i class="fas fa-eye"></i> View
-                                                </a>
-                                            {% else %}
-                                                <span class="text-muted">No file</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
+                                        <tr>
+                                            <td>{{ doc.get_document_type_display }}</td>
+                                            <td>{{ doc.title }}</td>
+                                            <td>
+                                                {% if doc.expiry_date %}
+                                                    {{ doc.expiry_date|date:"M d, Y" }}
+                                                    {% if doc.expiry_date < now.date %}
+                                                        <span class="badge bg-danger">Expired</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    —
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if doc.is_verified %}
+                                                    <span class="badge bg-success">Verified</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Pending</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{{ doc.document_file.url }}" class="btn btn-sm btn-info" target="_blank">
+                                                        <i class="fas fa-eye"></i> View
+                                                    </a>
+                                                    {% if request.user.is_officer or request.user.is_admin %}
+                                                        <button class="btn btn-sm btn-success verify-doc-btn" data-doc-id="{{ doc.id }}">
+                                                            <i class="fas fa-check"></i> Verify
+                                                        </button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
                     {% else %}
-                        <p class="text-muted">No documents have been added for this vehicle.</p>
-                        {% if user.is_vehicle_owner and vehicle.owner == user %}
-                        <a href="{% url 'vehicles:add_document' vehicle.id %}" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Add Document
-                        </a>
-                        {% endif %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-file-alt fa-3x text-gray-300 mb-3"></i>
+                            <p class="text-gray-600">No documents available</p>
+                            {% if request.user.is_vehicle_owner and request.user == vehicle.owner %}
+                                <a href="{% url 'vehicles:add_document' vehicle.id %}" class="btn btn-primary mt-2">
+                                    <i class="fas fa-plus-circle me-1"></i> Add Document
+                                </a>
+                            {% endif %}
+                        </div>
                     {% endif %}
                 </div>
             </div>
-
+            
             <!-- Violations Section -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Violation History</h5>
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Violation History</h6>
                 </div>
                 <div class="card-body">
                     {% if violations %}
                         <div class="table-responsive">
-                            <table class="table table-striped">
+                            <table class="table table-bordered">
                                 <thead>
                                     <tr>
                                         <th>Date</th>
-                                        <th>Type</th>
+                                        <th>Violation Type</th>
                                         <th>Location</th>
-                                        <th>Fine</th>
+                                        <th>Fine Amount</th>
                                         <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for violation in violations %}
-                                    <tr>
-                                        <td>{{ violation.timestamp|date:"M d, Y" }}</td>
-                                        <td>{{ violation.violation_type.name }}</td>
-                                        <td>{{ violation.location|default:"N/A" }}</td>
-                                        <td>{{ violation.fine_amount }}</td>
-                                        <td>
-                                            {% if violation.status == 'issued' %}
-                                                <span class="badge bg-warning text-dark">Unpaid</span>
-                                            {% elif violation.status == 'paid' %}
-                                                <span class="badge bg-success">Paid</span>
-                                            {% elif violation.status == 'appealed' %}
-                                                <span class="badge bg-info">Appealed</span>
-                                            {% elif violation.status == 'cancelled' %}
-                                                <span class="badge bg-secondary">Cancelled</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">{{ violation.status }}</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
+                                        <tr>
+                                            <td>{{ violation.timestamp|date:"M d, Y H:i" }}</td>
+                                            <td>{{ violation.violation_type.name }}</td>
+                                            <td>{{ violation.location }}</td>
+                                            <td>NPR {{ violation.fine_amount }}</td>
+                                            <td>
+                                                <span class="badge 
+                                                    {% if violation.status == 'paid' %}bg-success
+                                                    {% elif violation.status == 'pending' %}bg-warning
+                                                    {% elif violation.status == 'appealed' %}bg-info
+                                                    {% elif violation.status == 'appeal_approved' %}bg-success
+                                                    {% elif violation.status == 'appeal_rejected' %}bg-danger
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ violation.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="#" class="btn btn-sm btn-info view-violation" data-violation-id="{{ violation.id }}">
+                                                        <i class="fas fa-eye"></i> View
+                                                    </a>
+                                                    {% if violation.status == 'pending' and request.user.is_vehicle_owner %}
+                                                        <a href="#" class="btn btn-sm btn-success pay-violation" data-violation-id="{{ violation.id }}">
+                                                            <i class="fas fa-money-bill"></i> Pay
+                                                        </a>
+                                                        <a href="#" class="btn btn-sm btn-warning appeal-violation" data-violation-id="{{ violation.id }}">
+                                                            <i class="fas fa-gavel"></i> Appeal
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
                     {% else %}
-                        <p class="text-muted">No violations have been recorded for this vehicle.</p>
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <p class="text-gray-600">No violations found for this vehicle</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
         </div>
         
-        <!-- QR Code and Owner Info -->
-        <div class="col-md-4">
-            <!-- QR Code Section -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Vehicle QR Code</h5>
+        <!-- Vehicle Owner Information Card -->
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Owner Information</h6>
                 </div>
                 <div class="card-body">
-                    <div class="qr-code-container">
-                        {% if vehicle.qr_code %}
-                            <img src="{{ vehicle.qr_code.url }}" alt="Vehicle QR Code" class="qr-code-image img-fluid mb-3">
+                    <div class="text-center mb-4">
+                        {% if vehicle.owner.profile_picture %}
+                            <img src="{{ vehicle.owner.profile_picture.url }}" class="img-fluid rounded-circle" style="width: 150px; height: 150px; object-fit: cover;" alt="Profile Picture">
                         {% else %}
-                            <div class="alert alert-warning">QR code not generated yet.</div>
+                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center mx-auto" style="width: 150px; height: 150px;">
+                                <span class="text-white fw-bold h1">{{ vehicle.owner.get_full_name|default:vehicle.owner.username|first|upper }}</span>
+                            </div>
                         {% endif %}
-                        
-                        {% if user.is_vehicle_owner and vehicle.owner == user %}
-                        <div class="d-grid gap-2">
-                            <button id="generateQRBtn" class="btn btn-primary" {% if vehicle.qr_code %}data-bs-toggle="tooltip" title="Regenerate QR Code"{% endif %}>
-                                <i class="fas fa-qrcode me-2"></i>
-                                {% if vehicle.qr_code %}Regenerate{% else %}Generate{% endif %} QR Code
-                            </button>
-                            
-                            {% if vehicle.qr_code %}
-                            <a href="{{ vehicle.qr_code.url }}" class="btn btn-outline-primary" download>
-                                <i class="fas fa-download me-2"></i> Download QR Code
-                            </a>
-                            {% endif %}
-                        </div>
-                        {% endif %}
+                        <h5 class="mt-3">{{ vehicle.owner.get_full_name|default:vehicle.owner.username }}</h5>
+                        <p class="badge bg-info">{{ vehicle.owner.get_user_type_display }}</p>
                     </div>
                     
-                    <div class="alert alert-info mt-3" role="alert">
-                        <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>How to use:</h6>
-                        <p class="mb-0">Show this QR code to traffic officers for quick verification of your vehicle information and documents.</p>
-                    </div>
+                    {% if request.user.is_officer or request.user.is_admin or request.user == vehicle.owner %}
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-envelope me-2"></i> Email</span>
+                                <span>{{ vehicle.owner.email }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-phone me-2"></i> Phone</span>
+                                <span>{{ vehicle.owner.phone_number|default:"Not provided" }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-map-marker-alt me-2"></i> Address</span>
+                                <span>{{ vehicle.owner.address|default:"Not provided" }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-check-circle me-2"></i> Account Verified</span>
+                                <span>
+                                    {% if vehicle.owner.profile.is_verified %}
+                                        <i class="fas fa-check text-success"></i> Yes
+                                    {% else %}
+                                        <i class="fas fa-times text-danger"></i> No
+                                    {% endif %}
+                                </span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-car me-2"></i> Total Vehicles</span>
+                                <span class="badge bg-primary">{{ vehicle.owner.owned_vehicles.count }}</span>
+                            </li>
+                        </ul>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-lock me-2"></i> Contact information is only visible to officers, administrators, and the vehicle owner.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             
-            <!-- Owner Information -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Owner Information</h5>
+            <!-- QR Code Card -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">QR Code</h6>
                 </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        {% if vehicle.owner.profile_picture %}
-                            <img src="{{ vehicle.owner.profile_picture.url }}" alt="Owner" class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
-                        {% else %}
-                            <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
-                                <i class="fas fa-user fa-2x"></i>
-                            </div>
-                        {% endif %}
-                        <div>
-                            <h5 class="mb-0">{{ vehicle.owner.get_full_name }}</h5>
-                            <p class="text-muted mb-0">{{ vehicle.owner.get_user_type_display }}</p>
+                <div class="card-body text-center">
+                    {% if vehicle.qr_code %}
+                        <img src="{{ vehicle.qr_code.url }}" class="img-fluid mb-3" alt="Vehicle QR Code">
+                        <p class="text-muted small">Scan this QR code to verify vehicle information</p>
+                        <a href="{% url 'vehicles:qr_code' vehicle.id %}" class="btn btn-primary">
+                            <i class="fas fa-expand me-1"></i> View Full Size
+                        </a>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i> QR code not generated yet.
                         </div>
-                    </div>
-                    
-                    <dl>
-                        <dt>Email</dt>
-                        <dd>{{ vehicle.owner.email }}</dd>
-                        
-                        <dt>Phone</dt>
-                        <dd>{{ vehicle.owner.phone_number|default:"Not provided" }}</dd>
-                        
-                        <dt>Address</dt>
-                        <dd>{{ vehicle.owner.address|default:"Not provided" }}</dd>
-                    </dl>
+                        {% if request.user.is_vehicle_owner and request.user == vehicle.owner %}
+                            <button id="generateQRBtn" class="btn btn-primary" data-vehicle-id="{{ vehicle.id }}">
+                                <i class="fas fa-qrcode me-1"></i> Generate QR Code
+                            </button>
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -292,43 +353,40 @@
 
 {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Generate QR Code functionality
-    const generateQRBtn = document.getElementById('generateQRBtn');
-    if (generateQRBtn) {
-        generateQRBtn.addEventListener('click', function() {
-            // Show spinner
-            const originalText = generateQRBtn.innerHTML;
-            generateQRBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...';
-            generateQRBtn.disabled = true;
-            
-            // Make AJAX request to generate QR code
-            fetch('{% url "vehicles:generate_qr_code" vehicle.id %}')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.qr_code_url) {
-                        // Refresh the page to show the new QR code
-                        window.location.reload();
-                    } else {
+    document.addEventListener('DOMContentLoaded', function() {
+        // QR Code Generation
+        const generateQRBtn = document.getElementById('generateQRBtn');
+        if (generateQRBtn) {
+            generateQRBtn.addEventListener('click', function() {
+                const vehicleId = this.getAttribute('data-vehicle-id');
+                if (!vehicleId) return;
+                
+                // Show loading state
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating...';
+                this.disabled = true;
+                
+                fetch(`/vehicles/generate-qr-code/${vehicleId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.qr_code_url) {
+                            // Reload the page to show the new QR code
+                            window.location.reload();
+                        } else {
+                            alert('Error generating QR code. Please try again.');
+                            this.innerHTML = '<i class="fas fa-qrcode me-1"></i> Generate QR Code';
+                            this.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
                         alert('Error generating QR code. Please try again.');
-                        generateQRBtn.innerHTML = originalText;
-                        generateQRBtn.disabled = false;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error generating QR code. Please try again.');
-                    generateQRBtn.innerHTML = originalText;
-                    generateQRBtn.disabled = false;
-                });
-        });
-    }
-});
+                        this.innerHTML = '<i class="fas fa-qrcode me-1"></i> Generate QR Code';
+                        this.disabled = false;
+                    });
+            });
+        }
+        
+        // TODO: Document verification, violation payment, and appeal functionality
+    });
 </script>
 {% endblock %}

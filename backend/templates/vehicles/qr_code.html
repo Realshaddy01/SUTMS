@@ -1,127 +1,204 @@
 {% extends 'base/base.html' %}
-{% load static %}
 
-{% block title %}QR Code for {{ vehicle.license_plate }}{% endblock %}
-
-{% block extra_css %}
-<style>
-    .qr-container {
-        text-align: center;
-        padding: 30px;
-        max-width: 600px;
-        margin: 0 auto;
-    }
-    .qr-image {
-        max-width: 350px;
-        border: 1px solid #ddd;
-        padding: 20px;
-        background-color: white;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .vehicle-info {
-        margin-top: 20px;
-        padding: 15px;
-        background-color: #f8f9fa;
-        border-radius: 5px;
-        text-align: left;
-    }
-    .instructions {
-        margin-top: 30px;
-        text-align: left;
-        border-left: 3px solid #007bff;
-        padding-left: 15px;
-    }
-    @media print {
-        .no-print {
-            display: none !important;
-        }
-        .print-only {
-            display: block !important;
-        }
-        .container {
-            max-width: 100% !important;
-            width: 100% !important;
-        }
-    }
-    .print-only {
-        display: none;
-    }
-</style>
-{% endblock %}
+{% block title %}QR Code - {{ vehicle.license_plate }} - SUTMS{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <h1 class="mb-0">Vehicle QR Code</h1>
-        <div>
-            <a href="{% url 'vehicles:detail' vehicle.id %}" class="btn btn-outline-secondary me-2">
-                <i class="fas fa-arrow-left"></i> Back to Vehicle
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">
+            QR Code: {{ vehicle.license_plate }}
+        </h1>
+        
+        <div class="btn-group">
+            <a href="{% url 'vehicles:detail' vehicle.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i> Back to Vehicle
             </a>
-            <button onclick="window.print()" class="btn btn-primary">
-                <i class="fas fa-print"></i> Print QR Code
+            <button id="printQR" class="btn btn-primary">
+                <i class="fas fa-print me-2"></i> Print
             </button>
         </div>
     </div>
     
-    <div class="print-only mt-4">
-        <h2 class="text-center">Vehicle QR Code</h2>
-    </div>
-    
-    <div class="qr-container">
-        {% if vehicle.qr_code %}
-            <div>
-                <img src="{{ vehicle.qr_code.url }}" alt="Vehicle QR Code" class="qr-image img-fluid mb-4">
-                <h3 class="mb-3">{{ vehicle.license_plate }}</h3>
-            </div>
-        {% else %}
-            <div class="alert alert-warning">
-                <h4>QR code not generated yet.</h4>
-                <p>Please go back to the vehicle details page and generate a QR code.</p>
-                <a href="{% url 'vehicles:detail' vehicle.id %}" class="btn btn-primary">Back to Vehicle Details</a>
-            </div>
-        {% endif %}
-        
-        <div class="vehicle-info">
-            <div class="row">
-                <div class="col-md-6">
-                    <dl>
-                        <dt>Vehicle</dt>
-                        <dd>{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</dd>
-                        
-                        <dt>Color</dt>
-                        <dd>{{ vehicle.color }}</dd>
-                        
-                        <dt>Registration</dt>
-                        <dd>{{ vehicle.registration_number }}</dd>
-                    </dl>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Vehicle QR Code</h6>
                 </div>
-                <div class="col-md-6">
-                    <dl>
-                        <dt>Owner</dt>
-                        <dd>{{ vehicle.owner.get_full_name }}</dd>
-                        
-                        <dt>Registration Expiry</dt>
-                        <dd>{{ vehicle.registration_expiry|default:"Not set" }}</dd>
-                        
-                        <dt>Insurance Expiry</dt>
-                        <dd>{{ vehicle.insurance_expiry|default:"Not set" }}</dd>
-                    </dl>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div id="qr-container" class="text-center mb-4">
+                                {% if vehicle.qr_code %}
+                                    <img src="{{ vehicle.qr_code.url }}" class="img-fluid qr-image" alt="Vehicle QR Code">
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i> QR code not generated yet.
+                                    </div>
+                                    <button id="generateQRBtn" class="btn btn-primary" data-vehicle-id="{{ vehicle.id }}">
+                                        <i class="fas fa-qrcode me-2"></i> Generate QR Code
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="vehicle-info p-4">
+                                <h4 class="text-center mb-4">Vehicle Information</h4>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>License Plate:</strong>
+                                        <span>{{ vehicle.license_plate }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>Vehicle Type:</strong>
+                                        <span>{{ vehicle.vehicle_type.name }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>Make/Model:</strong>
+                                        <span>{{ vehicle.make }} {{ vehicle.model }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>Year:</strong>
+                                        <span>{{ vehicle.year }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>Color:</strong>
+                                        <span>{{ vehicle.color }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>Registration No:</strong>
+                                        <span>{{ vehicle.registration_number|default:"Not provided" }}</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>Registration Status:</strong>
+                                        <span>
+                                            {% if vehicle.is_registration_expired %}
+                                                <span class="badge bg-danger">Expired</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Valid</span>
+                                                until {{ vehicle.registration_expiry|date:"M d, Y"|default:"N/A" }}
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <strong>Insurance Status:</strong>
+                                        <span>
+                                            {% if vehicle.is_insurance_expired %}
+                                                <span class="badge bg-danger">Expired</span>
+                                            {% elif vehicle.is_insured %}
+                                                <span class="badge bg-success">Insured</span>
+                                                until {{ vehicle.insurance_expiry|date:"M d, Y"|default:"N/A" }}
+                                            {% else %}
+                                                <span class="badge bg-warning">Not Insured</span>
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                </ul>
+                                
+                                <div class="alert alert-info mt-4">
+                                    <i class="fas fa-info-circle me-2"></i> This QR code can be scanned by traffic officers to verify your vehicle information.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-primary">
+                                <h5 class="alert-heading"><i class="fas fa-lightbulb me-2"></i> QR Code Instructions</h5>
+                                <p>Print this QR code and keep it with your vehicle documents. When asked by a traffic officer:</p>
+                                <ol>
+                                    <li>Present this QR code to the officer</li>
+                                    <li>The officer will scan it using the SUTMS app</li>
+                                    <li>This will provide them with real-time vehicle and owner information</li>
+                                    <li>This helps streamline traffic enforcement and verification</li>
+                                </ol>
+                                <p class="mb-0">The QR code contains a unique identifier for your vehicle that links to your records in the SUTMS database.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="instructions no-print">
-            <h4>How to use your QR code:</h4>
-            <ol>
-                <li>Print this QR code and keep it in your vehicle or save it on your phone.</li>
-                <li>Present it to traffic officers when requested for quick verification of your vehicle information.</li>
-                <li>Officers can scan this code to instantly access your vehicle information, registration status, and verify your identity.</li>
-                <li>This helps streamline routine traffic checks and verification processes.</li>
-            </ol>
-            <div class="alert alert-info mt-3">
-                <i class="fas fa-info-circle me-2"></i> This QR code contains information that uniquely identifies your vehicle in the system. Your personal details are only accessible to authorized traffic officers.
             </div>
         </div>
     </div>
 </div>
+
+<!-- Printable QR Code Template -->
+<div id="printable-qr" style="display: none;">
+    <div style="text-align: center; padding: 20px;">
+        <h2 style="margin-bottom: 20px;">SUTMS Vehicle Verification</h2>
+        <div style="margin: 0 auto; max-width: 500px;">
+            {% if vehicle.qr_code %}
+                <img src="{{ vehicle.qr_code.url }}" style="width: 100%; max-width: 300px;" alt="Vehicle QR Code">
+            {% endif %}
+        </div>
+        <div style="margin-top: 30px; font-size: 14px;">
+            <p><strong>License Plate:</strong> {{ vehicle.license_plate }}</p>
+            <p><strong>Vehicle:</strong> {{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</p>
+            <p><strong>Color:</strong> {{ vehicle.color }}</p>
+            <p><strong>Registration No:</strong> {{ vehicle.registration_number|default:"Not provided" }}</p>
+            {% if vehicle.registration_expiry %}
+                <p><strong>Registration Valid Until:</strong> {{ vehicle.registration_expiry|date:"F d, Y" }}</p>
+            {% endif %}
+        </div>
+        <div style="margin-top: 20px; padding: 10px; border: 1px solid #ccc; display: inline-block;">
+            <p style="margin: 0;">Scan this QR code to verify vehicle information</p>
+        </div>
+        <p style="margin-top: 20px; font-size: 12px;">Generated by Smart Urban Traffic Management System</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // QR Code Generation
+        const generateQRBtn = document.getElementById('generateQRBtn');
+        if (generateQRBtn) {
+            generateQRBtn.addEventListener('click', function() {
+                const vehicleId = this.getAttribute('data-vehicle-id');
+                if (!vehicleId) return;
+                
+                // Show loading state
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating...';
+                this.disabled = true;
+                
+                fetch(`/vehicles/generate-qr-code/${vehicleId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.qr_code_url) {
+                            // Reload the page to show the new QR code
+                            window.location.reload();
+                        } else {
+                            alert('Error generating QR code. Please try again.');
+                            this.innerHTML = '<i class="fas fa-qrcode me-1"></i> Generate QR Code';
+                            this.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error generating QR code. Please try again.');
+                        this.innerHTML = '<i class="fas fa-qrcode me-1"></i> Generate QR Code';
+                        this.disabled = false;
+                    });
+            });
+        }
+        
+        // Print QR Code
+        const printQRBtn = document.getElementById('printQR');
+        if (printQRBtn) {
+            printQRBtn.addEventListener('click', function() {
+                const printContents = document.getElementById('printable-qr').innerHTML;
+                const originalContents = document.body.innerHTML;
+                
+                document.body.innerHTML = printContents;
+                window.print();
+                document.body.innerHTML = originalContents;
+                
+                // Re-initialize event listeners after restoring content
+                window.location.reload();
+            });
+        }
+    });
+</script>
 {% endblock %}

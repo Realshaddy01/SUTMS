@@ -20,6 +20,12 @@ urlpatterns = [
     # Core app (home page and health check)
     path('', include('core.urls')),
     
+    # Dashboard
+    path('dashboard/', include('dashboard.urls')),
+    
+    # Vehicles
+    path('vehicles/', include('vehicles.urls')),
+    
     # API endpoints
     path('api/', include('api.urls')),
     

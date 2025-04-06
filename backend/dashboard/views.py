@@ -1,110 +1,140 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Sum, Avg
 from django.utils import timezone
 from datetime import timedelta
+from django.db.models import Sum, Count, Q
 
-# Import necessary models from other apps
-from violations.models import Violation, ViolationType
+# Import models as needed
 from vehicles.models import Vehicle
-from tracking.models import TrafficOfficerLocation
-from ocr.models import LicensePlateDetection
+from violations.models import Violation, Notification, ViolationAppeal
 
 
 @login_required
 def dashboard(request):
-    """Main dashboard view showing statistics and recent activity."""
-    
-    # Get today's date and date range for statistics
-    today = timezone.now().date()
-    week_ago = today - timedelta(days=7)
-    month_ago = today - timedelta(days=30)
-    
+    """Main dashboard view with role-specific data."""
     context = {
-        'today': today,
+        'current_date': timezone.now(),
     }
     
-    # Different stats based on user role
-    if request.user.is_admin:
-        # Admin dashboard stats
+    # Get statistics based on user role
+    if request.user.is_vehicle_owner():
+        # Statistics for vehicle owners
+        user_vehicles = Vehicle.objects.filter(owner=request.user)
+        user_violations = Violation.objects.filter(vehicle__in=user_vehicles)
+        
+        pending_violations = user_violations.filter(
+            status__in=['pending', 'approved', 'issued']
+        ).count()
+        
+        outstanding_fines = user_violations.filter(
+            status__in=['pending', 'approved', 'issued']
+        ).aggregate(total=Sum('fine_amount'))['total'] or 0
+        
+        # Calculate compliance rate
+        total_violations = user_violations.count()
+        if total_violations > 0:
+            resolved_violations = user_violations.filter(
+                status__in=['paid', 'appeal_approved', 'cancelled']
+            ).count()
+            compliance_rate = f"{int((resolved_violations / total_violations) * 100)}%"
+        else:
+            compliance_rate = "100%"
+        
         context.update({
-            'total_violations': Violation.objects.count(),
-            'weekly_violations': Violation.objects.filter(created_at__gte=week_ago).count(),
-            'total_vehicles': Vehicle.objects.count(),
-            'total_officers': TrafficOfficerLocation.objects.values('officer').distinct().count(),
-            'recent_detections': LicensePlateDetection.objects.order_by('-detected_at')[:10],
-            'violation_chart_data': _get_violation_chart_data(month_ago),
-            'officer_stats': _get_officer_stats(),
-            'hotspot_data': _get_violation_hotspots(),
+            'stats': {
+                'vehicles_count': user_vehicles.count(),
+                'pending_violations': pending_violations,
+                'outstanding_fines': f"रू {outstanding_fines:,.2f}",
+                'compliance_rate': compliance_rate,
+            },
+            'recent_violations': user_violations.order_by('-timestamp')[:5],
         })
-    elif request.user.is_officer:
-        # Officer dashboard stats
+        
+    elif request.user.is_officer():
+        # Statistics for traffic officers
+        today = timezone.now().date()
+        violations_today = Violation.objects.filter(
+            reported_by=request.user,
+            timestamp__date=today
+        ).count()
+        
+        # This would be replaced with actual plate detection model in production
+        from ocr.models import LicensePlateDetection
+        detections = LicensePlateDetection.objects.filter(user=request.user)
+        
+        # Get pending appeals count
+        pending_appeals = ViolationAppeal.objects.filter(
+            status='pending'
+        ).count()
+        
+        # Detection accuracy (placeholder for demo)
+        detection_accuracy = "85%"
+        
         context.update({
-            'officer_violations': Violation.objects.filter(reported_by=request.user).count(),
-            'officer_weekly': Violation.objects.filter(
-                reported_by=request.user, 
-                created_at__gte=week_ago
-            ).count(),
-            'recent_reports': Violation.objects.filter(
-                reported_by=request.user
-            ).order_by('-created_at')[:5],
-            'recent_detections': LicensePlateDetection.objects.filter(
-                user=request.user
-            ).order_by('-detected_at')[:10],
-            'officer_chart_data': _get_officer_violations_chart(request.user, month_ago),
+            'stats': {
+                'violations_today': violations_today,
+                'detections_count': detections.count(),
+                'pending_appeals': pending_appeals,
+                'detection_accuracy': detection_accuracy,
+            },
+            'recent_detections': detections.order_by('-created_at')[:5],
         })
-    else:
-        # Vehicle owner dashboard stats
-        owner_vehicles = Vehicle.objects.filter(owner=request.user)
+        
+    elif request.user.is_admin():
+        # Statistics for administrators
+        total_vehicles = Vehicle.objects.count()
+        total_violations = Violation.objects.count()
+        
+        # Revenue collected
+        total_revenue = Violation.objects.filter(
+            status='paid'
+        ).aggregate(total=Sum('fine_amount'))['total'] or 0
+        
+        # User count 
+        # Replace with actual User model import in production
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        total_users = User.objects.count()
+        
+        # Last 7 days violations for chart
+        last_week = timezone.now().date() - timedelta(days=7)
+        violation_data = []
+        violation_types = Violation.objects.values('violation_type__name').annotate(
+            count=Count('id')
+        ).order_by('-count')[:5]
+        
+        for vtype in violation_types:
+            violation_data.append({
+                'label': vtype['violation_type__name'],
+                'count': vtype['count']
+            })
+        
         context.update({
-            'owner_vehicles': owner_vehicles,
-            'vehicle_violations': Violation.objects.filter(
-                vehicle__in=owner_vehicles
-            ).count(),
-            'recent_violations': Violation.objects.filter(
-                vehicle__in=owner_vehicles
-            ).order_by('-created_at')[:5],
-            'unpaid_violations': Violation.objects.filter(
-                vehicle__in=owner_vehicles,
-                status='issued'
-            ).count(),
-            'owner_chart_data': _get_owner_violations_chart(request.user, month_ago),
+            'stats': {
+                'total_vehicles': total_vehicles,
+                'total_violations': total_violations,
+                'total_revenue': f"रू {total_revenue:,.2f}",
+                'total_users': total_users,
+            },
+            'violation_data': violation_data,
         })
     
-    return render(request, 'dashboard/dashboard.html', context)
-
-
-def _get_violation_chart_data(start_date):
-    """Get violation statistics for charts."""
-    # This is a placeholder for actual chart data gathering
-    violation_stats = Violation.objects.filter(
-        created_at__gte=start_date
-    ).values('violation_type__name').annotate(
-        count=Count('id')
-    ).order_by('-count')
+    # Recent activities for all users
+    activities = Notification.objects.filter(
+        Q(user=request.user) | Q(user__isnull=True)
+    ).order_by('-created_at')[:10]
     
-    return violation_stats
-
-
-def _get_officer_stats():
-    """Get officer activity statistics."""
-    # This is a placeholder for actual officer stats calculation
-    return {}
-
-
-def _get_violation_hotspots():
-    """Get geographical hotspots for violations."""
-    # This is a placeholder for actual hotspot calculation
-    return {}
-
-
-def _get_officer_violations_chart(officer, start_date):
-    """Get violation statistics for a specific officer."""
-    # This is a placeholder for actual officer-specific chart data
-    return {}
-
-
-def _get_owner_violations_chart(owner, start_date):
-    """Get violation statistics for a specific vehicle owner."""
-    # This is a placeholder for actual owner-specific chart data
-    return {}
+    context['recent_activities'] = activities
+    
+    # Get unread notifications count for topbar
+    unread_count = Notification.objects.filter(
+        user=request.user, 
+        is_read=False
+    ).count()
+    
+    context['unread_notifications_count'] = unread_count
+    context['notifications'] = Notification.objects.filter(
+        user=request.user
+    ).order_by('-created_at')[:5]
+    
+    return render(request, 'dashboard/index.html', context)

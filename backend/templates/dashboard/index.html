@@ -1,0 +1,886 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Dashboard - SUTMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+        <span class="text-gray-500">
+            <i class="fas fa-calendar-alt me-1"></i> {{ current_date|date:"l, F d, Y" }}
+        </span>
+    </div>
+
+    <!-- Greeting -->
+    <div class="card shadow mb-4">
+        <div class="card-body bg-light">
+            <div class="row">
+                <div class="col-md-9">
+                    <h5 class="mb-1">Welcome, {{ request.user.get_full_name|default:request.user.username }}!</h5>
+                    <p class="text-muted mb-0">
+                        {% if request.user.is_vehicle_owner %}
+                            You're logged in as a Vehicle Owner. Manage your vehicles, view violations, and pay fines.
+                        {% elif request.user.is_officer %}
+                            You're logged in as a Traffic Officer. Scan vehicles, report violations, and review appeals.
+                        {% elif request.user.is_admin %}
+                            You're logged in as a System Administrator. Manage users, violations, and system settings.
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-3 text-md-end mt-3 mt-md-0">
+                    <span class="badge bg-primary p-2">{{ request.user.get_user_type_display }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role-Specific Widgets -->
+    <!-- VEHICLE OWNER DASHBOARD -->
+    {% if request.user.is_vehicle_owner %}
+        <!-- Statistics -->
+        <div class="row">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    My Vehicles
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.vehicles_count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-car fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Pending Violations
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.pending_violations }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-danger shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                    Outstanding Fines
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.outstanding_fines }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-money-bill fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Compliance Rate
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.compliance_rate }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Violations and Actions -->
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">Recent Violations</h6>
+                        <a href="#" class="btn btn-sm btn-primary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_violations %}
+                            <div class="table-responsive">
+                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Vehicle</th>
+                                            <th>Violation Type</th>
+                                            <th>Fine</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for violation in recent_violations %}
+                                            <tr>
+                                                <td>{{ violation.timestamp|date:"M d, Y" }}</td>
+                                                <td>{{ violation.vehicle.license_plate }}</td>
+                                                <td>{{ violation.violation_type.name }}</td>
+                                                <td>रू {{ violation.fine_amount }}</td>
+                                                <td>
+                                                    <span class="badge 
+                                                        {% if violation.status == 'paid' %}bg-success
+                                                        {% elif violation.status == 'pending' %}bg-warning
+                                                        {% elif violation.status == 'appealed' %}bg-info
+                                                        {% elif violation.status == 'approved' %}bg-danger
+                                                        {% elif violation.status == 'appeal_approved' %}bg-success
+                                                        {% elif violation.status == 'appeal_rejected' %}bg-danger
+                                                        {% else %}bg-secondary{% endif %}">
+                                                        {{ violation.get_status_display }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group">
+                                                        <a href="#" class="btn btn-sm btn-info">View</a>
+                                                        {% if violation.status == 'pending' or violation.status == 'approved' %}
+                                                            <a href="#" class="btn btn-sm btn-success">Pay</a>
+                                                            <a href="#" class="btn btn-sm btn-warning">Appeal</a>
+                                                        {% endif %}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                                <p class="lead text-gray-800">No violations found</p>
+                                <p class="text-muted">Keep up the good work and drive safely!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Quick Actions Card -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <a href="{% url 'vehicles:add' %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-plus-circle me-2 text-primary"></i> Add New Vehicle</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Register a new vehicle in the system</p>
+                            </a>
+                            <a href="{% url 'vehicles:list' %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-car me-2 text-primary"></i> View My Vehicles</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Manage your registered vehicles</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-money-bill-wave me-2 text-primary"></i> Pay Fines</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Pay pending violation fines</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-bell me-2 text-primary"></i> Notifications</h6>
+                                    <span class="badge bg-danger">{{ unread_notifications_count }}</span>
+                                </div>
+                                <p class="mb-1 small text-gray-600">View your notification history</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">Recent Notifications</h6>
+                        <span class="badge bg-danger">{{ unread_notifications_count }}</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="notifications-list">
+                            {% if notifications %}
+                                {% for notification in notifications %}
+                                    <div class="notification-item p-3 border-bottom {% if not notification.is_read %}unread{% endif %} {% if notification.notification_type == 'violation' %}violation{% elif notification.notification_type == 'appeal' %}appeal{% elif notification.notification_type == 'payment' %}payment{% endif %}">
+                                        <div class="d-flex">
+                                            <div class="me-3">
+                                                <div class="icon-circle 
+                                                    {% if notification.notification_type == 'violation' %}bg-danger
+                                                    {% elif notification.notification_type == 'appeal' %}bg-warning
+                                                    {% elif notification.notification_type == 'payment' %}bg-success
+                                                    {% else %}bg-primary{% endif %}">
+                                                    {% if notification.notification_type == 'violation' %}
+                                                        <i class="fas fa-exclamation-triangle text-white"></i>
+                                                    {% elif notification.notification_type == 'appeal' %}
+                                                        <i class="fas fa-gavel text-white"></i>
+                                                    {% elif notification.notification_type == 'payment' %}
+                                                        <i class="fas fa-money-bill text-white"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-bell text-white"></i>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="small text-gray-500">{{ notification.created_at|date:"M d, Y H:i" }}</div>
+                                                <p class="mb-1">{{ notification.message }}</p>
+                                                {% if notification.link %}
+                                                    <a href="{{ notification.link }}" class="small">View details</a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                <div class="text-center p-3">
+                                    <a href="#" class="small text-gray-500">View All Notifications</a>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-bell-slash fa-2x text-gray-300 mb-3"></i>
+                                    <p class="text-gray-500 mb-0">No new notifications</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- TRAFFIC OFFICER DASHBOARD -->
+    {% elif request.user.is_officer %}
+        <!-- Statistics -->
+        <div class="row">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Violations Today
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.violations_today }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    License Plates Detected
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.detections_count }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-camera fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Detection Accuracy
+                                </div>
+                                <div class="row no-gutters align-items-center">
+                                    <div class="col-auto">
+                                        <div class="h5 mb-0 me-3 font-weight-bold text-gray-800">{{ stats.detection_accuracy }}</div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="progress progress-sm mr-2">
+                                            <div class="progress-bar bg-info" role="progressbar" style="width: 85%" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    Pending Appeals
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.pending_appeals }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-gavel fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Detections and Actions -->
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">Recent License Plate Detections</h6>
+                        <a href="#" class="btn btn-sm btn-primary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_detections %}
+                            <div class="table-responsive">
+                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>License Plate</th>
+                                            <th>Confidence</th>
+                                            <th>Location</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for detection in recent_detections %}
+                                            <tr>
+                                                <td>{{ detection.created_at|date:"M d, Y H:i" }}</td>
+                                                <td>{{ detection.plate_text }}</td>
+                                                <td>
+                                                    <div class="small">
+                                                        <div class="progress" style="height: 5px;">
+                                                            <div class="progress-bar bg-success" role="progressbar"
+                                                                style="width: {{ detection.confidence|floatformat:0 }}%"
+                                                                aria-valuenow="{{ detection.confidence|floatformat:0 }}"
+                                                                aria-valuemin="0" aria-valuemax="100"></div>
+                                                        </div>
+                                                        <span class="small">{{ detection.confidence|floatformat:1 }}%</span>
+                                                    </div>
+                                                </td>
+                                                <td>{{ detection.location|default:"Not specified" }}</td>
+                                                <td>
+                                                    <div class="btn-group">
+                                                        <a href="#" class="btn btn-sm btn-info">View</a>
+                                                        <a href="#" class="btn btn-sm btn-danger">Report Violation</a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-camera fa-4x text-gray-300 mb-3"></i>
+                                <p class="lead text-gray-800">No recent detections</p>
+                                <p class="text-muted">Start scanning license plates to see results here</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Quick Actions Card -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Officer Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <a href="{% url 'vehicles:scan_qr' %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-qrcode me-2 text-primary"></i> Scan QR Code</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Scan vehicle QR code to verify details</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-camera me-2 text-primary"></i> Scan License Plate</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Use camera to detect license plates</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-exclamation-triangle me-2 text-primary"></i> Report Violation</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Report a traffic violation</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-gavel me-2 text-primary"></i> Review Appeals</h6>
+                                    <span class="badge bg-warning">{{ stats.pending_appeals }}</span>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Review pending violation appeals</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">Recent Notifications</h6>
+                        <span class="badge bg-danger">{{ unread_notifications_count }}</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="notifications-list">
+                            {% if notifications %}
+                                {% for notification in notifications %}
+                                    <div class="notification-item p-3 border-bottom {% if not notification.is_read %}unread{% endif %} {% if notification.notification_type == 'violation' %}violation{% elif notification.notification_type == 'appeal' %}appeal{% elif notification.notification_type == 'payment' %}payment{% endif %}">
+                                        <div class="d-flex">
+                                            <div class="me-3">
+                                                <div class="icon-circle 
+                                                    {% if notification.notification_type == 'violation' %}bg-danger
+                                                    {% elif notification.notification_type == 'appeal' %}bg-warning
+                                                    {% elif notification.notification_type == 'payment' %}bg-success
+                                                    {% else %}bg-primary{% endif %}">
+                                                    {% if notification.notification_type == 'violation' %}
+                                                        <i class="fas fa-exclamation-triangle text-white"></i>
+                                                    {% elif notification.notification_type == 'appeal' %}
+                                                        <i class="fas fa-gavel text-white"></i>
+                                                    {% elif notification.notification_type == 'payment' %}
+                                                        <i class="fas fa-money-bill text-white"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-bell text-white"></i>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div class="small text-gray-500">{{ notification.created_at|date:"M d, Y H:i" }}</div>
+                                                <p class="mb-1">{{ notification.message }}</p>
+                                                {% if notification.link %}
+                                                    <a href="{{ notification.link }}" class="small">View details</a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                <div class="text-center p-3">
+                                    <a href="#" class="small text-gray-500">View All Notifications</a>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="fas fa-bell-slash fa-2x text-gray-300 mb-3"></i>
+                                    <p class="text-gray-500 mb-0">No new notifications</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- ADMIN DASHBOARD -->
+    {% elif request.user.is_admin %}
+        <!-- Statistics -->
+        <div class="row">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    Total Vehicles
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_vehicles }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-car fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-danger shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                    Total Violations
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_violations }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    Total Revenue
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_revenue }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-money-bill-wave fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col me-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Total Users
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_users }}</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-users fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Content -->
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Violation Types Chart -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">Violation Distribution</h6>
+                        <div class="dropdown no-arrow">
+                            <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in" aria-labelledby="dropdownMenuLink">
+                                <div class="dropdown-header">View Options:</div>
+                                <a class="dropdown-item" href="#">This Week</a>
+                                <a class="dropdown-item" href="#">This Month</a>
+                                <a class="dropdown-item" href="#">This Year</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-pie pt-4 pb-2">
+                            <canvas id="violationChart"></canvas>
+                        </div>
+                        <div class="mt-4 text-center small">
+                            {% for item in violation_data %}
+                                <span class="me-2">
+                                    <i class="fas fa-circle" style="color: hsl({{ forloop.counter0|mul:30 }}, 70%, 50%)"></i> {{ item.label }}
+                                </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Recent System Activity</h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="timeline">
+                            {% for activity in recent_activities %}
+                                <li class="timeline-item mb-4">
+                                    <div class="timeline-badge 
+                                        {% if activity.notification_type == 'violation' %}bg-danger
+                                        {% elif activity.notification_type == 'appeal' %}bg-warning
+                                        {% elif activity.notification_type == 'payment' %}bg-success
+                                        {% elif activity.notification_type == 'system' %}bg-info
+                                        {% else %}bg-primary{% endif %}">
+                                        {% if activity.notification_type == 'violation' %}
+                                            <i class="fas fa-exclamation-triangle text-white"></i>
+                                        {% elif activity.notification_type == 'appeal' %}
+                                            <i class="fas fa-gavel text-white"></i>
+                                        {% elif activity.notification_type == 'payment' %}
+                                            <i class="fas fa-money-bill text-white"></i>
+                                        {% elif activity.notification_type == 'system' %}
+                                            <i class="fas fa-cog text-white"></i>
+                                        {% else %}
+                                            <i class="fas fa-bell text-white"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="timeline-panel">
+                                        <div class="timeline-heading">
+                                            <h6 class="timeline-title">{{ activity.title }}</h6>
+                                            <p class="text-muted small"><i class="far fa-clock me-1"></i> {{ activity.created_at|date:"M d, Y H:i" }}</p>
+                                        </div>
+                                        <div class="timeline-body">
+                                            <p>{{ activity.message }}</p>
+                                            {% if activity.link %}
+                                                <a href="{{ activity.link }}" class="small">View details</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </li>
+                            {% empty %}
+                                <li class="text-center py-4">
+                                    <i class="fas fa-history fa-3x text-gray-300 mb-3"></i>
+                                    <p class="text-gray-500">No recent activity</p>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Admin Actions Card -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Administrative Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-users me-2 text-primary"></i> Manage Users</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Add, edit, or deactivate system users</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-exclamation-triangle me-2 text-primary"></i> Manage Violations</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Configure violation types and fine amounts</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-chart-bar me-2 text-primary"></i> System Reports</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">View detailed system analytics and reports</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-cog me-2 text-primary"></i> System Settings</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Configure system parameters and settings</p>
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <h6 class="mb-1"><i class="fas fa-database me-2 text-primary"></i> Backup & Restore</h6>
+                                    <i class="fas fa-chevron-right text-gray-500"></i>
+                                </div>
+                                <p class="mb-1 small text-gray-600">Manage system backups and restoration</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Health Card -->
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">System Health</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="font-weight-bold">Database Status <span class="badge bg-success">Online</span></h6>
+                            <div class="progress mb-1" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar" style="width: 65%;" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-gray-500">Storage usage: 65%</small>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="font-weight-bold">API Health <span class="badge bg-success">Operational</span></h6>
+                            <div class="progress mb-1" style="height: 8px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 93%;" aria-valuenow="93" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-gray-500">Performance: 93%</small>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="font-weight-bold">OCR Engine <span class="badge bg-success">Active</span></h6>
+                            <div class="progress mb-1" style="height: 8px;">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: 85%;" aria-valuenow="85" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-gray-500">Recognition accuracy: 85%</small>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="font-weight-bold">System Load <span class="badge bg-warning">Moderate</span></h6>
+                            <div class="progress mb-1" style="height: 8px;">
+                                <div class="progress-bar bg-warning" role="progressbar" style="width: 75%;" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <small class="text-gray-500">CPU usage: 75%</small>
+                        </div>
+                        <a href="#" class="btn btn-primary btn-block">
+                            <i class="fas fa-cog me-1"></i> System Diagnostics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if request.user.is_admin %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Violation distribution chart
+        const violations = [
+            {% for item in violation_data %}
+                {
+                    label: "{{ item.label }}",
+                    count: {{ item.count }},
+                },
+            {% endfor %}
+        ];
+        
+        if (violations.length > 0) {
+            const ctx = document.getElementById('violationChart');
+            
+            const data = {
+                labels: violations.map(v => v.label),
+                datasets: [{
+                    data: violations.map(v => v.count),
+                    backgroundColor: violations.map((_, index) => `hsl(${index * 30}, 70%, 50%)`),
+                    hoverBackgroundColor: violations.map((_, index) => `hsl(${index * 30}, 80%, 40%)`),
+                    borderWidth: 1,
+                }]
+            };
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: data,
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    cutout: '70%',
+                    elements: {
+                        arc: {
+                            borderWidth: 0
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+<style>
+    /* Timeline styles */
+    .timeline {
+        position: relative;
+        padding: 0;
+        list-style: none;
+    }
+
+    .timeline:before {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 40px;
+        width: 2px;
+        margin-left: -1.5px;
+        content: '';
+        background-color: #e9ecef;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 50px;
+        margin-left: 60px;
+    }
+
+    .timeline-badge {
+        position: absolute;
+        top: 0;
+        left: -60px;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 40px;
+        color: white;
+    }
+
+    .timeline-badge i {
+        font-size: 1rem;
+    }
+
+    .timeline-panel {
+        position: relative;
+        padding: 20px;
+        border-radius: 0.3rem;
+        background-color: #f8f9fa;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+
+    .timeline-panel:before {
+        position: absolute;
+        top: 10px;
+        left: -14px;
+        display: inline-block;
+        border-top: 14px solid transparent;
+        border-right: 14px solid #f8f9fa;
+        border-bottom: 14px solid transparent;
+        content: '';
+    }
+
+    .timeline-title {
+        margin-top: 0;
+        color: inherit;
+        font-weight: 600;
+    }
+</style>
+{% endif %}
+{% endblock %}
