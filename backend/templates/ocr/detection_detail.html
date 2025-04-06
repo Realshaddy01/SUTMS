@@ -1,0 +1,285 @@
+{% extends 'base.html' %}
+
+{% block title %}Detection Details - SUTMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .plate-image {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 5px;
+    }
+    .text-highlight {
+        font-size: 1.5rem;
+        font-weight: bold;
+        padding: 0.5rem;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        display: inline-block;
+        min-width: 100px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-id-card me-2"></i> License Plate Detection Details</h1>
+        <div>
+            <a href="/ocr/detect/" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-1"></i> Back to Detection
+            </a>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Detection Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h5>Original Image</h5>
+                    {% if detection.original_image %}
+                        <img src="{{ detection.original_image.url }}" alt="Original Image" class="plate-image img-fluid">
+                    {% else %}
+                        <div class="text-center p-4 bg-light rounded">
+                            <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                            <p class="text-muted">No image available</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="col-md-6 mb-4">
+                    <h5>Processed Image</h5>
+                    {% if detection.processed_image %}
+                        <img src="{{ detection.processed_image.url }}" alt="Processed Image" class="plate-image img-fluid">
+                    {% elif detection.cropped_plate %}
+                        <img src="{{ detection.cropped_plate.url }}" alt="Cropped Plate" class="plate-image img-fluid">
+                    {% else %}
+                        <div class="text-center p-4 bg-light rounded">
+                            <i class="fas fa-image fa-3x text-muted mb-2"></i>
+                            <p class="text-muted">No processed image available</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <h5>Detected Text</h5>
+                        <div class="text-highlight">{{ detection.detected_text|default:"None" }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <h5>Corrected Text</h5>
+                        {% if detection.corrected_text %}
+                            <div class="text-highlight">{{ detection.corrected_text }}</div>
+                        {% else %}
+                            <form id="correction-form" class="d-flex">
+                                <input type="text" id="corrected-text" class="form-control me-2" placeholder="Enter correction" required>
+                                <button type="submit" class="btn btn-primary">Submit</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Detection Details</h5>
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th>Status</th>
+                                <td>
+                                    {% if detection.status == 'success' %}
+                                        <span class="badge bg-success">Success</span>
+                                    {% elif detection.status == 'manual' %}
+                                        <span class="badge bg-info">Manual Entry</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Failed</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Confidence</th>
+                                <td>{{ detection.confidence|floatformat:1 }}%</td>
+                            </tr>
+                            <tr>
+                                <th>Processing Time</th>
+                                <td>{{ detection.processing_time|floatformat:2 }} ms</td>
+                            </tr>
+                            <tr>
+                                <th>Detection Date</th>
+                                <td>{{ detection.created_at }}</td>
+                            </tr>
+                            <tr>
+                                <th>Detected By</th>
+                                <td>{{ detection.detected_by.get_full_name|default:detection.detected_by.username }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="col-md-6">
+                    <h5>Related Vehicle</h5>
+                    {% if detection.related_vehicle %}
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ detection.related_vehicle.make }} {{ detection.related_vehicle.model }}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">{{ detection.related_vehicle.license_plate }}</h6>
+                                <table class="table table-borderless table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th>Owner</th>
+                                            <td>{{ detection.related_vehicle.owner.get_full_name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Color</th>
+                                            <td>{{ detection.related_vehicle.color }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Year</th>
+                                            <td>{{ detection.related_vehicle.year }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Registration</th>
+                                            <td>{{ detection.related_vehicle.registration_number }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Registration Expiry</th>
+                                            <td>
+                                                {{ detection.related_vehicle.registration_expiry }}
+                                                {% if detection.related_vehicle.is_registration_expired %}
+                                                    <span class="badge bg-danger">Expired</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Insurance</th>
+                                            <td>
+                                                {{ detection.related_vehicle.insurance_provider }}
+                                                {% if detection.related_vehicle.is_insured %}
+                                                    <span class="badge bg-success">Insured</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Not Insured</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <a href="/vehicles/{{ detection.related_vehicle.id }}/" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-car me-1"></i> View Vehicle Details
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center p-4 bg-light rounded">
+                            <i class="fas fa-car fa-3x text-muted mb-2"></i>
+                            <p class="text-muted">No matching vehicle found in the database.</p>
+                            {% if detection.detected_text or detection.corrected_text %}
+                                <a href="/vehicles/add/?license_plate={{ detection.corrected_text|default:detection.detected_text }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-plus-circle me-1"></i> Add Vehicle
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Actions</h5>
+                <div class="btn-group">
+                    {% if not detection.is_in_training_set %}
+                        <button id="add-training-button" class="btn btn-success">
+                            <i class="fas fa-plus-circle me-1"></i> Add to Training Set
+                        </button>
+                    {% endif %}
+                    
+                    {% if detection.related_vehicle %}
+                        <a href="/violations/report/?vehicle_id={{ detection.related_vehicle.id }}&detection_id={{ detection.id }}" class="btn btn-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i> Report Violation
+                        </a>
+                    {% endif %}
+                    
+                    <a href="#" onclick="window.print();" class="btn btn-info">
+                        <i class="fas fa-print me-1"></i> Print Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Handle correction form submission
+        $('#correction-form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const correctedText = $('#corrected-text').val().trim();
+            if (!correctedText) {
+                alert('Please enter a valid license plate text.');
+                return;
+            }
+            
+            $(this).find('button').prop('disabled', true);
+            
+            $.ajax({
+                url: '/ocr/detection/{{ detection.id }}/correct/',
+                type: 'POST',
+                data: {
+                    corrected_text: correctedText,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + response.error);
+                    }
+                },
+                error: function() {
+                    alert('Error submitting correction. Please try again.');
+                },
+                complete: function() {
+                    $('#correction-form').find('button').prop('disabled', false);
+                }
+            });
+        });
+        
+        // Handle adding to training set
+        $('#add-training-button').on('click', function() {
+            $(this).prop('disabled', true);
+            
+            $.ajax({
+                url: '/ocr/detection/{{ detection.id }}/add-to-training/',
+                type: 'POST',
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}'
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        alert('Image added to training set successfully!');
+                        $('#add-training-button').hide();
+                    } else {
+                        alert('Error: ' + response.error);
+                    }
+                },
+                error: function() {
+                    alert('Error adding image to training set. Please try again.');
+                },
+                complete: function() {
+                    $('#add-training-button').prop('disabled', false);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

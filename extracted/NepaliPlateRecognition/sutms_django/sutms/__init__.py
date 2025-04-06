@@ -1,0 +1,3 @@
+"""
+SUTMS Django project initialization
+"""

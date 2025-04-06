@@ -1,0 +1,3 @@
+"""
+SUTMS Project initialization
+"""

@@ -1,0 +1,40 @@
+[project]
+name = "repl-nix-workspace"
+version = "0.1.0"
+description = "Smart Urban Traffic Management System (SUTMS)"
+requires-python = ">=3.11"
+dependencies = [
+    "django-cors-headers>=4.7.0",
+    "email-validator>=2.2.0",
+    "gunicorn>=23.0.0",
+    "psycopg2-binary>=2.9.10",
+    "python-dotenv>=1.1.0",
+    "numpy>=2.2.4",
+    "pytesseract>=0.3.13",
+    "django>=5.2",
+    "djangorestframework>=3.16.0",
+    "opencv-python>=4.11.0.86",
+    "pillow>=11.1.0",
+    "stripe>=12.0.0",
+    "firebase-admin>=6.7.0",
+    "pymysql>=1.1.1",
+    "qrcode>=8.1",
+    "cryptography>=44.0.2",
+    "celery>=5.5.0",
+    "tensorflow>=2.14.0",
+    "mysqlclient>=2.2.7",
+    "channels>=4.2.2",
+    "redis>=5.2.1",
+    "dj-database-url>=2.3.0",
+    "oauthlib>=3.2.2",
+    "django-storages>=1.14.6",
+    "django-rest-auth>=0.9.5",
+    "django-allauth>=65.7.0",
+    "google-auth>=2.38.0",
+    "python-dateutil>=2.9.0.post0",
+    "django-filter>=25.1",
+    "trafilatura>=2.0.0",
+    "openai>=1.70.0",
+    "matplotlib>=3.10.1",
+    "scikit-learn>=1.6.1",
+]

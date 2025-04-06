@@ -1,0 +1,127 @@
+/* OCR-specific styles */
+
+.plate-detection-container {
+    margin-bottom: 2rem;
+}
+
+.plate-image-container {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.plate-image-container img {
+    max-height: 150px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+/* Loading indicator */
+#loadingIndicator {
+    padding: 2rem;
+    text-align: center;
+}
+
+/* License plate text display */
+#plateText {
+    font-family: monospace;
+    letter-spacing: 2px;
+    padding: 0.5rem 1rem;
+    font-size: 1.5rem;
+    display: inline-block;
+}
+
+/* Confidence display */
+.confidence-meter {
+    height: 10px;
+    background-color: #e9ecef;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.confidence-level {
+    height: 100%;
+    border-radius: 5px;
+    transition: width 0.5s ease;
+}
+
+/* Recent detections list */
+.detection-list-item {
+    transition: all 0.2s ease;
+}
+
+.detection-list-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.detection-plate-text {
+    font-family: monospace;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* Detection status badges */
+.badge.success {
+    background-color: #28a745;
+}
+
+.badge.failure {
+    background-color: #dc3545;
+}
+
+.badge.manual {
+    background-color: #17a2b8;
+}
+
+/* Vehicle info cards */
+#vehicleInfo, #noVehicleInfo, #errorInfo {
+    margin-top: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+/* Correction form */
+#correctedText {
+    font-family: monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Image comparison section */
+.image-comparison {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.image-comparison-item {
+    flex: 1;
+    min-width: 300px;
+    text-align: center;
+}
+
+.image-comparison-item .title {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.image-comparison-item img {
+    max-width: 100%;
+    max-height: 250px;
+    object-fit: contain;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    background-color: #fff;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .image-comparison-item {
+        min-width: 100%;
+    }
+}
