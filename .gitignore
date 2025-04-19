@@ -1,4 +1,5 @@
-# Python virtual environments
+
+echo "# Python virtual environments
 .venv/
 venv/
 ENV/
@@ -37,3 +38,8 @@ build/
 
 # macOS specific
 .DS_Store
+
+
+
+
+
