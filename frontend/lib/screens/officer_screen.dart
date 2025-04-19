@@ -4,7 +4,7 @@ import '../providers/auth_provider.dart';
 import '../providers/violation_provider.dart';
 import '../widgets/violation_card.dart';
 import '../widgets/loading_indicator.dart';
-import '../utils/constants.dart';
+import '../screens/analytics_screen.dart';
 
 class OfficerScreen extends StatefulWidget {
   const OfficerScreen({Key? key}) : super(key: key);
@@ -41,10 +41,15 @@ class _OfficerScreenState extends State<OfficerScreen> with SingleTickerProvider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
       
+      // Check if user and token are available
+      if (authProvider.user == null || authProvider.user!.token == null) {
+        throw Exception('Authentication token not found');
+      }
+      
       await Future.wait([
-        violationProvider.fetchViolations(authProvider.user!.token, authProvider.userType),
-        violationProvider.fetchViolationTypes(authProvider.user!.token),
-        violationProvider.fetchNotifications(authProvider.user!.token),
+        violationProvider.fetchViolations(status: null, period: null, userType: authProvider.userType),
+        violationProvider.fetchViolationTypes(),
+        violationProvider.fetchNotifications(authProvider.user!.token!),
       ]);
     } catch (e) {
       setState(() {
@@ -244,8 +249,8 @@ class _OfficerScreenState extends State<OfficerScreen> with SingleTickerProvider
         onPressed: () {
           Navigator.pushNamed(context, '/camera');
         },
-        child: const Icon(Icons.camera_alt),
         tooltip: 'Record Violation',
+        child: const Icon(Icons.camera_alt),
       ),
     );
   }
@@ -462,13 +467,6 @@ class _OfficerScreenState extends State<OfficerScreen> with SingleTickerProvider
                     violation: violation,
                     onTap: () {
                       _showViolationDetailsDialog(violation);
-                    },
-                    showActions: true,
-                    onUpdateStatus: (newStatus) {
-                      _updateViolationStatus(violation.id, newStatus);
-                    },
-                    onDetectLicensePlate: () {
-                      _detectLicensePlate(violation.id);
                     },
                   ),
                 );
@@ -770,12 +768,10 @@ class _OfficerScreenState extends State<OfficerScreen> with SingleTickerProvider
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
       
       final success = await violationProvider.updateViolationStatus(
-        authProvider.user!.token,
-        violationId,
+        int.parse(violationId),
         newStatus,
       );
       
@@ -812,26 +808,12 @@ class _OfficerScreenState extends State<OfficerScreen> with SingleTickerProvider
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
-      
-      final result = await violationProvider.detectLicensePlate(
-        authProvider.user!.token,
-        violationId,
+      // Since the ViolationProvider.detectLicensePlate method requires a File,
+      // we need a different approach. This method should capture an image
+      // or select one from the gallery first.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('License plate detection requires capturing an image first')),
       );
-      
-      if (result != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('License plate detected: ${result['detected_license_plate']} (Confidence: ${(result['confidence_score'] * 100).toStringAsFixed(1)}%)')),
-        );
-        
-        // Refresh data to show updated license plate
-        await _loadData();
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(violationProvider.error ?? 'Failed to detect license plate')),
-        );
-      }
     } catch (e) {
       setState(() {
         _error = 'Failed to detect license plate. Please try again.';

@@ -4,7 +4,12 @@ Views for the payments app.
 import json
 import logging
 import uuid
-import stripe
+try:
+    import stripe
+except ImportError:
+    # If stripe is not available, use our mock implementation
+    stripe = None
+
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
@@ -17,12 +22,21 @@ from django.utils import timezone
 from django.db import models
 from .models import Payment, PaymentLog, PaymentReceipt
 from violations.models import Violation
-from .stripe import (
-    create_checkout_session,
-    handle_webhook_event,
-    get_payment_status,
-    create_payment_receipt
-)
+try:
+    from .stripe import (
+        create_checkout_session,
+        handle_webhook_event,
+        get_payment_status,
+        create_payment_receipt
+    )
+except ImportError:
+    # If stripe implementation is not available, use our mock wrapper
+    from .stripe_wrapper import (
+        create_checkout_session,
+        handle_webhook_event,
+        get_payment_status,
+        create_payment_receipt
+    )
 
 logger = logging.getLogger('sutms.payments')
 

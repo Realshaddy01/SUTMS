@@ -125,7 +125,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             );
           }
           
-          if (violation.finePaid) {
+          if (violation.finePaid == true) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -177,13 +177,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         ),
                         const Divider(),
                         const SizedBox(height: 8),
-                        _buildSummaryRow('License Plate', violation.licensePlate),
+                        _buildSummaryRow('License Plate', violation.licensePlate ?? 'Not available'),
                         const SizedBox(height: 8),
-                        _buildSummaryRow('Violation Type', violation.violationTypeName),
+                        _buildSummaryRow('Violation Type', violation.violationTypeName ?? 'Not available'),
                         const SizedBox(height: 8),
-                        _buildSummaryRow('Date', violation.timestamp.substring(0, 10)),
+                        _buildSummaryRow('Date', violation.timestamp.isNotEmpty ? 
+                          violation.timestamp.substring(0, 10) : 'Not available'),
                         const SizedBox(height: 8),
-                        _buildSummaryRow('Location', violation.location),
+                        _buildSummaryRow('Location', violation.location ?? 'Not available'),
                         const Divider(),
                         const SizedBox(height: 8),
                         _buildSummaryRow(

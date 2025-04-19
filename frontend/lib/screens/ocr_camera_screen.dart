@@ -4,8 +4,8 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
+import '../services/ml_model_service.dart';
 import '../providers/vehicle_provider.dart';
-import '../utils/constants.dart';
 import '../widgets/loading_overlay.dart';
 import '../widgets/plate_result_card.dart';
 import '../screens/violation_form_screen.dart';
@@ -27,12 +27,15 @@ class _OCRCameraScreenState extends State<OCRCameraScreen> with WidgetsBindingOb
   Map<String, dynamic>? _ocrResult;
   
   final _apiService = ApiService();
+  late MLModelService _mlModelService;
   
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeCamera();
+    _mlModelService = MLModelService();
+    _mlModelService.loadModel();
   }
   
   @override
@@ -64,7 +67,7 @@ class _OCRCameraScreenState extends State<OCRCameraScreen> with WidgetsBindingOb
     
     if (_cameras == null || _cameras!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('No camera available'),
           backgroundColor: Colors.red,
         ),
@@ -116,7 +119,7 @@ class _OCRCameraScreenState extends State<OCRCameraScreen> with WidgetsBindingOb
   Future<void> _takePicture() async {
     if (_controller == null || !_controller!.value.isInitialized) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Camera not initialized'),
           backgroundColor: Colors.red,
         ),
@@ -188,10 +191,25 @@ class _OCRCameraScreenState extends State<OCRCameraScreen> with WidgetsBindingOb
   Future<void> _processImage(File imageFile) async {
     setState(() {
       _imageFile = imageFile;
+      _isProcessing = true;
     });
     
     try {
-      final result = await _apiService.detectLicensePlate(imageFile);
+      // First try to use our local ML model
+      final localResult = await _mlModelService.recognizeLicensePlate(imageFile);
+      if (localResult != null && localResult.isNotEmpty) {
+        setState(() {
+          _ocrResult = {'license_plate': localResult};
+          _isProcessing = false;
+        });
+        
+        // If license plate detected, search for vehicle
+        await _searchVehicle(localResult);
+        return;
+      }
+      
+      // Fallback to API if local model fails
+      final result = await _apiService.detectLicensePlateWithoutToken(imageFile);
       
       setState(() {
         _ocrResult = result;
@@ -253,93 +271,63 @@ class _OCRCameraScreenState extends State<OCRCameraScreen> with WidgetsBindingOb
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('License Plate Scanner'),
-        elevation: Constants.appBarElevation,
+        title: const Text('License Plate Scanner'),
         actions: [
-          IconButton(
-            icon: Icon(Icons.photo_library),
-            onPressed: _pickImageFromGallery,
-          ),
           IconButton(
             icon: Icon(_isBackCamera ? Icons.camera_front : Icons.camera_rear),
             onPressed: _toggleCamera,
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Expanded(
-                flex: 3,
-                child: _buildCameraPreview(),
-              ),
-              Expanded(
-                flex: 2,
-                child: _buildResultsView(),
+      body: LoadingOverlay(
+        isLoading: _isProcessing,
+        loadingText: 'Processing image...',
+        child: Column(
+          children: [
+            // Camera preview
+            Expanded(
+              child: _isCameraInitialized
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: CameraPreview(_controller!),
+                    )
+                  : const Center(child: CircularProgressIndicator()),
+            ),
+            
+            // Results display
+            if (_ocrResult != null && _imageFile != null) ...[
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: PlateResultCard(
+                  plateText: _ocrResult!['license_plate'] ?? 'Unknown',
+                  confidence: _ocrResult!['confidence'] ?? 0.0,
+                  imagePath: _imageFile!.path,
+                  onCreateViolation: _createViolation,
+                ),
               ),
             ],
-          ),
-          if (_isProcessing) LoadingOverlay(message: 'Processing image...'),
-        ],
-      ),
-      floatingActionButton: _isCameraInitialized && !_isProcessing
-        ? FloatingActionButton(
-            child: Icon(Icons.camera),
-            onPressed: _takePicture,
-          )
-        : null,
-    );
-  }
-  
-  Widget _buildCameraPreview() {
-    if (!_isCameraInitialized || _controller == null) {
-      return Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-    
-    return ClipRect(
-      child: Container(
-        child: AspectRatio(
-          aspectRatio: 1 / _controller!.value.aspectRatio,
-          child: CameraPreview(_controller!),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildResultsView() {
-    final vehicleProvider = Provider.of<VehicleProvider>(context);
-    
-    return Container(
-      padding: EdgeInsets.all(Constants.defaultPadding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'License Plate Results',
-            style: Theme.of(context).textTheme.headline6,
-          ),
-          SizedBox(height: Constants.smallPadding),
-          Expanded(
-            child: _ocrResult != null
-                ? PlateResultCard(
-                    plateText: _ocrResult!['license_plate'] ?? 'No plate detected',
-                    confidence: _ocrResult!['confidence'] ?? 0.0,
-                    vehicle: vehicleProvider.currentVehicle,
-                    imagePath: _imageFile?.path,
-                    onCreateViolation: _createViolation,
-                  )
-                : Center(
-                    child: Text(
-                      'Capture an image to detect license plate',
-                      style: Theme.of(context).textTheme.bodyText1,
-                      textAlign: TextAlign.center,
-                    ),
+            
+            // Camera controls
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  FloatingActionButton(
+                    onPressed: _pickImageFromGallery,
+                    backgroundColor: Colors.orange,
+                    child: const Icon(Icons.photo_library),
                   ),
-          ),
-        ],
+                  FloatingActionButton(
+                    onPressed: _takePicture,
+                    backgroundColor: Colors.red,
+                    child: const Icon(Icons.camera),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

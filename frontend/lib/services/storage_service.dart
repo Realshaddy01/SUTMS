@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../utils/constants.dart';
 
 class StorageService {
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
@@ -11,17 +12,17 @@ class StorageService {
   
   // Get authentication token
   Future<String?> getAuthToken() async {
-    return await _secureStorage.read(key: _authTokenKey);
+    return await _secureStorage.read(key: Constants.tokenKey);
   }
   
   // Save authentication token
   Future<void> saveAuthToken(String token) async {
-    await _secureStorage.write(key: _authTokenKey, value: token);
+    await _secureStorage.write(key: Constants.tokenKey, value: token);
   }
   
   // Clear authentication token (logout)
   Future<void> clearAuthToken() async {
-    await _secureStorage.delete(key: _authTokenKey);
+    await _secureStorage.delete(key: Constants.tokenKey);
   }
   
   // Save user ID
@@ -38,14 +39,12 @@ class StorageService {
   
   // Save user data
   Future<void> saveUserData(String userData) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userDataKey, userData);
+    await _secureStorage.write(key: Constants.userDataKey, value: userData);
   }
   
   // Get user data
   Future<String?> getUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_userDataKey);
+    return await _secureStorage.read(key: Constants.userDataKey);
   }
   
   // Clear all user data
@@ -91,5 +90,25 @@ class StorageService {
   Future<double?> getDoubleSetting(String key) async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getDouble(key);
+  }
+  
+  // Save refresh token
+  Future<void> saveRefreshToken(String token) async {
+    await _secureStorage.write(key: Constants.refreshTokenKey, value: token);
+  }
+  
+  // Get refresh token
+  Future<String?> getRefreshToken() async {
+    return await _secureStorage.read(key: Constants.refreshTokenKey);
+  }
+  
+  // Save user role
+  Future<void> saveUserRole(String role) async {
+    await _secureStorage.write(key: Constants.userRoleKey, value: role);
+  }
+  
+  // Get user role
+  Future<String?> getUserRole() async {
+    return await _secureStorage.read(key: Constants.userRoleKey);
   }
 }

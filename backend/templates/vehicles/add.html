@@ -33,12 +33,11 @@
                                     <label for="vehicle_type" class="form-label">Vehicle Type <span class="text-danger">*</span></label>
                                     <select class="form-select" id="vehicle_type" name="vehicle_type" required>
                                         <option value="" selected disabled>Select vehicle type</option>
-                                        <!-- Options would be populated dynamically -->
-                                        <option value="1">Car</option>
-                                        <option value="2">Motorcycle</option>
-                                        <option value="3">Truck</option>
-                                        <option value="4">Bus</option>
-                                        <option value="5">Van</option>
+                                        {% for vehicle_type in vehicle_types %}
+                                            <option value="{{ vehicle_type.id }}">{{ vehicle_type.name }}</option>
+                                        {% empty %}
+                                            <option value="" disabled>No vehicle types available</option>
+                                        {% endfor %}
                                     </select>
                                 </div>
                                 

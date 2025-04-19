@@ -8,6 +8,7 @@ from PIL import Image
 from django.conf import settings
 from .models import LicensePlateDetection, OCRModel
 from vehicles.models import Vehicle
+from openai import OpenAI
 
 logger = logging.getLogger('sutms.ocr')
 
@@ -233,3 +234,9 @@ def detect_license_plate(image_path, user=None, save_detection=True, location_da
         detection.save()
     
     return plate_text, confidence, vehicle
+
+
+def enhance_license_plate_detection(image_path):
+    client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+    # Process image and improve OCR accuracy
+    # Return enhanced results

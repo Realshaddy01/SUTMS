@@ -64,51 +64,74 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      final Map<String, dynamic> registrationData = {
-        'username': _usernameController.text.trim(),
-        'password': _passwordController.text,
-        'email': _emailController.text.trim(),
-        'firstName': _firstNameController.text.trim(),
-        'lastName': _lastNameController.text.trim(),
-        'userType': _selectedUserType,
-      };
-      
-      // Add user type specific fields
-      if (_selectedUserType == 'vehicle_owner') {
-        registrationData.addAll({
-          'citizenshipNumber': _citizenshipNumberController.text.trim(),
-          'phoneNumber': _phoneNumberController.text.trim(),
-          'address': _addressController.text.trim(),
-        });
-      } else if (_selectedUserType == 'traffic_officer') {
-        registrationData.addAll({
-          'badgeNumber': _badgeNumberController.text.trim(),
-          'department': _departmentController.text.trim(),
-          'jurisdiction': _jurisdictionController.text.trim(),
-        });
-      }
-
-      final success = await authProvider.register(
-        username: registrationData['username'],
-        password: registrationData['password'],
-        email: registrationData['email'],
-        firstName: registrationData['firstName'],
-        lastName: registrationData['lastName'],
-        userType: registrationData['userType'],
-        citizenshipNumber: registrationData['citizenshipNumber'],
-        phoneNumber: registrationData['phoneNumber'],
-        address: registrationData['address'],
-        badgeNumber: registrationData['badgeNumber'],
-        department: registrationData['department'],
-        jurisdiction: registrationData['jurisdiction'],
-      );
-
-      if (success && mounted) {
-        // Navigate based on user type
-        if (authProvider.userType == 'traffic_officer') {
-          Navigator.pushReplacementNamed(context, '/officer');
-        } else {
-          Navigator.pushReplacementNamed(context, '/home');
+      try {
+        // Clear previous errors
+        authProvider.clearError();
+        
+        final Map<String, dynamic> registrationData = {
+          'username': _usernameController.text.trim(),
+          'password': _passwordController.text,
+          'confirm_password': _confirmPasswordController.text,
+          'email': _emailController.text.trim(),
+          'first_name': _firstNameController.text.trim(),
+          'last_name': _lastNameController.text.trim(),
+          'user_type': _selectedUserType,
+        };
+        
+        // Add user type specific fields
+        if (_selectedUserType == 'vehicle_owner') {
+          registrationData.addAll({
+            'citizenship_number': _citizenshipNumberController.text.trim(),
+            'phone_number': _phoneNumberController.text.trim(),
+            'address': _addressController.text.trim(),
+          });
+        } else if (_selectedUserType == 'officer') {
+          registrationData.addAll({
+            'badge_number': _badgeNumberController.text.trim(),
+            'department': _departmentController.text.trim(),
+            'jurisdiction': _jurisdictionController.text.trim(),
+          });
+        }
+  
+        final success = await authProvider.registerFull(
+          username: registrationData['username'],
+          password: registrationData['password'],
+          email: registrationData['email'],
+          firstName: registrationData['first_name'],
+          lastName: registrationData['last_name'],
+          userType: registrationData['user_type'],
+          citizenshipNumber: registrationData['citizenship_number'],
+          phoneNumber: registrationData['phone_number'],
+          address: registrationData['address'],
+          badgeNumber: registrationData['badge_number'],
+          department: registrationData['department'],
+          jurisdiction: registrationData['jurisdiction'],
+        );
+  
+        if (success && mounted) {
+          // Navigate based on user type
+          if (authProvider.userType == 'officer') {
+            Navigator.pushReplacementNamed(context, '/officer');
+          } else {
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        } else if (mounted && authProvider.error != null) {
+          // Show error in snackbar for visibility
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.error!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Registration error: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     }
@@ -173,7 +196,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             Expanded(
                               child: RadioListTile<String>(
                                 title: const Text('Traffic Officer'),
-                                value: 'traffic_officer',
+                                value: 'officer',
                                 groupValue: _selectedUserType,
                                 onChanged: (value) {
                                   setState(() {
@@ -199,7 +222,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           controller: _usernameController,
                           labelText: 'Username',
                           prefixIcon: Icons.person,
-                          validator: Validators.validateUsername,
+                          validator: Validators.validateUsernameAdapter,
                         ),
                         const SizedBox(height: 16),
                         CustomTextField(
@@ -207,7 +230,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           labelText: 'Email',
                           prefixIcon: Icons.email,
                           keyboardType: TextInputType.emailAddress,
-                          validator: Validators.validateEmail,
+                          validator: Validators.validateEmailAdapter,
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -217,7 +240,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 controller: _firstNameController,
                                 labelText: 'First Name',
                                 prefixIcon: Icons.person_outline,
-                                validator: Validators.validateRequired,
+                                validator: Validators.validateRequiredAdapter,
                               ),
                             ),
                             const SizedBox(width: 16),
@@ -226,7 +249,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 controller: _lastNameController,
                                 labelText: 'Last Name',
                                 prefixIcon: Icons.person_outline,
-                                validator: Validators.validateRequired,
+                                validator: Validators.validateRequiredAdapter,
                               ),
                             ),
                           ],
@@ -237,7 +260,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           labelText: 'Password',
                           prefixIcon: Icons.lock,
                           obscureText: !_isPasswordVisible,
-                          validator: Validators.validatePassword,
+                          validator: Validators.validatePasswordAdapter,
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isPasswordVisible
@@ -257,12 +280,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           labelText: 'Confirm Password',
                           prefixIcon: Icons.lock,
                           obscureText: !_isConfirmPasswordVisible,
-                          validator: (value) {
-                            if (value != _passwordController.text) {
-                              return 'Passwords do not match';
-                            }
-                            return null;
-                          },
+                          validator: (value) => Validators.validateConfirmPassword(
+                            value, 
+                            _passwordController.text, 
+                            'Confirm Password'
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isConfirmPasswordVisible
@@ -292,7 +314,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             controller: _citizenshipNumberController,
                             labelText: 'Citizenship Number',
                             prefixIcon: Icons.badge,
-                            validator: Validators.validateRequired,
+                            validator: Validators.validateRequiredAdapter,
                           ),
                           const SizedBox(height: 16),
                           CustomTextField(
@@ -300,18 +322,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             labelText: 'Phone Number',
                             prefixIcon: Icons.phone,
                             keyboardType: TextInputType.phone,
-                            validator: Validators.validatePhone,
+                            validator: Validators.validatePhoneAdapter,
                           ),
                           const SizedBox(height: 16),
                           CustomTextField(
                             controller: _addressController,
                             labelText: 'Address',
                             prefixIcon: Icons.location_on,
-                            validator: Validators.validateRequired,
+                            validator: Validators.validateRequiredAdapter,
                           ),
                         ],
                         
-                        if (_selectedUserType == 'traffic_officer') ...[
+                        if (_selectedUserType == 'officer') ...[
                           const Text(
                             'Traffic Officer Details',
                             style: TextStyle(
@@ -324,14 +346,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             controller: _badgeNumberController,
                             labelText: 'Badge Number',
                             prefixIcon: Icons.badge,
-                            validator: Validators.validateRequired,
+                            validator: Validators.validateRequiredAdapter,
                           ),
                           const SizedBox(height: 16),
                           CustomTextField(
                             controller: _departmentController,
                             labelText: 'Department',
                             prefixIcon: Icons.business,
-                            validator: Validators.validateRequired,
+                            validator: Validators.validateRequiredAdapter,
                           ),
                           const SizedBox(height: 16),
                           CustomTextField(

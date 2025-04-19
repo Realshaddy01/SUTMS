@@ -175,14 +175,14 @@ class _ViolationDetailScreenState extends State<ViolationDetailScreen> {
                             color: _getStatusColor(violation.status),
                           ),
                         ),
-                        if (!violation.finePaid && violation.daysUntilDeadline > 0)
+                        if (violation.finePaid != null && !violation.finePaid! && violation.daysUntilDeadline != null && violation.daysUntilDeadline! > 0)
                           Text(
                             'Due in ${violation.daysUntilDeadline} days',
                             style: TextStyle(
                               color: Colors.grey[700],
                             ),
                           ),
-                        if (violation.finePaid && violation.paymentDate != null)
+                        if (violation.finePaid != null && violation.finePaid! && violation.paymentDate != null)
                           Text(
                             'Paid on ${_formatDate(violation.paymentDate!)}',
                             style: TextStyle(
@@ -241,7 +241,7 @@ class _ViolationDetailScreenState extends State<ViolationDetailScreen> {
                   const SizedBox(height: 12),
                   _buildDetailRow('Date & Time', formattedDate),
                   const SizedBox(height: 12),
-                  _buildDetailRow('Location', violation.location),
+                  _buildDetailRow('Location', violation.location ?? 'Unknown'),
                   if (violation.description != null) ...[
                     const SizedBox(height: 12),
                     _buildDetailRow('Description', violation.description!),
@@ -272,7 +272,7 @@ class _ViolationDetailScreenState extends State<ViolationDetailScreen> {
                   ),
                   const Divider(),
                   const SizedBox(height: 8),
-                  _buildDetailRow('License Plate', violation.licensePlate),
+                  _buildDetailRow('License Plate', violation.licensePlate ?? 'Unknown'),
                   if (violation.vehicleDetails != null) ...[
                     const SizedBox(height: 12),
                     _buildDetailRow(
@@ -306,19 +306,19 @@ class _ViolationDetailScreenState extends State<ViolationDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
+                  const Padding(
+                    padding: EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Evidence',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 18,
                           ),
                         ),
-                        const Divider(),
+                        Divider(),
                       ],
                     ),
                   ),
@@ -371,7 +371,7 @@ class _ViolationDetailScreenState extends State<ViolationDetailScreen> {
                     ),
                     const Divider(),
                     const SizedBox(height: 8),
-                    _buildDetailRow('Appeal Date', _formatDate(violation.appealDate!)),
+                    _buildDetailRow('Appeal Date', _formatDate(violation.appealDate)),
                     const SizedBox(height: 12),
                     _buildDetailRow('Appeal Status', violation.appealStatus ?? 'Pending'),
                     const SizedBox(height: 12),
@@ -393,7 +393,7 @@ class _ViolationDetailScreenState extends State<ViolationDetailScreen> {
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildDetailRow(String label, String? value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -407,19 +407,17 @@ class _ViolationDetailScreenState extends State<ViolationDetailScreen> {
           ),
         ),
         Expanded(
-          child: Text(value),
+          child: Text(value ?? 'Unknown'),
         ),
       ],
     );
   }
 
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('MMM dd, yyyy').format(date);
-    } catch (e) {
-      return dateStr;
+  String _formatDate(DateTime? dateTime) {
+    if (dateTime == null) {
+      return 'Unknown';
     }
+    return DateFormat('MMM dd, yyyy').format(dateTime);
   }
 
   Color _getStatusColor(String status) {

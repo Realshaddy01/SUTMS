@@ -1,89 +1,174 @@
 class Validators {
-  // Email validation
-  static String? validateEmail(String? value) {
+  // Username validation
+  static String? validateUsername(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
-      return 'Email is required';
+      return '$fieldName is required';
     }
-    
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    if (!emailRegex.hasMatch(value)) {
+    if (value.length < 3) {
+      return '$fieldName must be at least 3 characters';
+    }
+    if (!RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(value)) {
+      return '$fieldName must contain only letters, numbers, and underscore';
+    }
+    return null;
+  }
+
+  // Adapter for FormInputField
+  static String? validateUsernameAdapter(String? value) {
+    return validateUsername(value, 'Username');
+  }
+
+  // Email validation
+  static String? validateEmail(String? value, String fieldName) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName is required';
+    }
+    if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(value)) {
       return 'Please enter a valid email address';
     }
-    
     return null;
   }
-  
+
+  // Adapter for FormInputField
+  static String? validateEmailAdapter(String? value) {
+    return validateEmail(value, 'Email');
+  }
+
   // Password validation
-  static String? validatePassword(String? value) {
+  static String? validatePassword(String? value, String fieldName) {
     if (value == null || value.isEmpty) {
-      return 'Password is required';
+      return '$fieldName is required';
     }
-    
     if (value.length < 8) {
-      return 'Password must be at least 8 characters long';
+      return '$fieldName must be at least 8 characters';
     }
-    
-    // Check for at least one uppercase letter, one lowercase letter, and one number
-    final hasUppercase = value.contains(RegExp(r'[A-Z]'));
-    final hasLowercase = value.contains(RegExp(r'[a-z]'));
-    final hasNumber = value.contains(RegExp(r'[0-9]'));
-    
-    if (!hasUppercase || !hasLowercase || !hasNumber) {
-      return 'Password must contain uppercase, lowercase, and number';
-    }
-    
     return null;
   }
-  
-  // Phone number validation for Nepal
-  static String? validateNepaliPhone(String? value) {
+
+  // Adapter for FormInputField
+  static String? validatePasswordAdapter(String? value) {
+    return validatePassword(value, 'Password');
+  }
+
+  // Confirm password validation
+  static String? validateConfirmPassword(String? value, String password, String fieldName) {
     if (value == null || value.isEmpty) {
-      return 'Phone number is required';
+      return '$fieldName is required';
     }
-    
-    // Nepal phone numbers: usually 10 digits starting with 9
-    final phoneRegex = RegExp(r'^9[0-9]{9}$');
-    if (!phoneRegex.hasMatch(value)) {
-      return 'Please enter a valid Nepali phone number';
+    if (value != password) {
+      return 'Passwords do not match';
     }
-    
     return null;
   }
-  
-  // Nepali license plate validation
-  static String? validateNepaliLicensePlate(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'License plate is required';
-    }
-    
-    // Format examples: "Ba 2 Pa 1234" or "Ba 2 Kha 1234"
-    final plateRegex = RegExp(r'^[A-Z][a-z]\s+\d+\s+[A-Z][a-z]\s+\d+$');
-    if (!plateRegex.hasMatch(value)) {
-      return 'Please enter a valid Nepali license plate format';
-    }
-    
-    return null;
-  }
-  
-  // Name validation
-  static String? validateName(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Name is required';
-    }
-    
-    if (value.length < 2) {
-      return 'Name must be at least 2 characters long';
-    }
-    
-    return null;
-  }
-  
+
   // Required field validation
   static String? validateRequired(String? value, String fieldName) {
-    if (value == null || value.trim().isEmpty) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName is required';
+    }
+    return null;
+  }
+
+  // Adapter for FormInputField
+  static String? validateRequiredAdapter(String? value) {
+    return validateRequired(value, 'Field');
+  }
+
+  // Phone number validation
+  static String? validatePhone(String? value, String fieldName) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName is required';
+    }
+    if (!RegExp(r'^\+?[0-9]{10,15}$').hasMatch(value)) {
+      return 'Please enter a valid phone number';
+    }
+    return null;
+  }
+
+  // Adapter for FormInputField
+  static String? validatePhoneAdapter(String? value) {
+    return validatePhone(value, 'Phone number');
+  }
+
+  // License plate validation
+  static String? validateLicensePlate(String? value, String fieldName) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName is required';
+    }
+    if (value.length < 2 || value.length > 15) {
+      return '$fieldName must be between 2 and 15 characters';
+    }
+    return null;
+  }
+
+  // Adapter for FormInputField
+  static String? validateLicensePlateAdapter(String? value) {
+    return validateLicensePlate(value, 'License plate');
+  }
+
+  // Year validation
+  static String? validateYear(String? value, String fieldName) {
+    if (value == null || value.isEmpty) {
       return '$fieldName is required';
     }
     
+    final year = int.tryParse(value);
+    if (year == null) {
+      return 'Please enter a valid year';
+    }
+    
+    final currentYear = DateTime.now().year;
+    if (year < 1900 || year > currentYear + 1) {
+      return 'Please enter a year between 1900 and ${currentYear + 1}';
+    }
+    
     return null;
+  }
+
+  // Adapter for FormInputField
+  static String? validateYearAdapter(String? value) {
+    return validateYear(value, 'Year');
+  }
+
+  // Numeric validation
+  static String? validateNumeric(String? value, String fieldName) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName is required';
+    }
+    
+    if (!RegExp(r'^\d+$').hasMatch(value)) {
+      return '$fieldName must contain only numbers';
+    }
+    
+    return null;
+  }
+
+  // Adapter for FormInputField
+  static String? validateNumericAdapter(String? value) {
+    return validateNumeric(value, 'Number');
+  }
+
+  // Double validation
+  static String? validateDouble(String? value, String fieldName) {
+    if (value == null || value.isEmpty) {
+      return '$fieldName is required';
+    }
+    
+    final double? number = double.tryParse(value);
+    if (number == null) {
+      return 'Please enter a valid number';
+    }
+    
+    return null;
+  }
+
+  // Adapter for FormInputField
+  static String? validateDoubleAdapter(String? value) {
+    return validateDouble(value, 'Number');
+  }
+
+  // Adapter for FormInputField
+  static String? Function(String?) validateConfirmPasswordAdapter(String password) {
+    return (String? value) => validateConfirmPassword(value, password, 'Confirm Password');
   }
 }

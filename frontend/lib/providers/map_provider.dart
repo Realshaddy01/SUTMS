@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:flutter_heatmap_map/flutter_heatmap_map.dart';
+import '../models/heatmap_point.dart';
 
 import '../services/api_service.dart';
 import '../utils/constants.dart';

@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:location/location.dart';
+// import 'package:location/location.dart'; // Temporarily commented out
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../models/officer_location.dart';
@@ -11,13 +12,15 @@ import '../services/api_service.dart';
 import '../utils/constants.dart';
 
 class TrackingProvider with ChangeNotifier {
-  final Location _location = Location();
+  // final Location _location = Location(); // Temporarily commented out
   GoogleMapController? _mapController;
   
   // User's current location
-  LocationData? _currentLocation;
+  // LocationData? _currentLocation; // Temporarily commented out
+  dynamic _currentLocation; // Temporary replacement
   bool _locationPermissionGranted = false;
-  StreamSubscription<LocationData>? _locationSubscription;
+  // StreamSubscription<LocationData>? _locationSubscription; // Temporarily commented out
+  StreamSubscription? _locationSubscription; // Temporary replacement
   
   // Tracking data
   List<OfficerLocation> _activeOfficers = [];
@@ -30,7 +33,7 @@ class TrackingProvider with ChangeNotifier {
   bool _showIncidents = true;
   
   // Map markers
-  Set<Marker> _markers = {};
+  final Set<Marker> _markers = {};
   
   // Filter settings
   double _nearbyRadius = Constants.nearbyRadius; // km
@@ -39,7 +42,7 @@ class TrackingProvider with ChangeNotifier {
   Timer? _dataRefreshTimer;
   
   // Getters
-  LocationData? get currentLocation => _currentLocation;
+  dynamic get currentLocation => _currentLocation;
   bool get locationPermissionGranted => _locationPermissionGranted;
   GoogleMapController? get mapController => _mapController;
   List<OfficerLocation> get activeOfficers => _activeOfficers;
@@ -54,7 +57,7 @@ class TrackingProvider with ChangeNotifier {
   // Initial camera position (defaults to Kathmandu)
   final LatLng _kathmandu = const LatLng(27.7172, 85.3240);
   LatLng get initialCameraPosition => _currentLocation != null
-      ? LatLng(_currentLocation!.latitude!, _currentLocation!.longitude!)
+      ? LatLng(_currentLocation['latitude'], _currentLocation['longitude'])
       : _kathmandu;
   
   // Initialize tracking
@@ -79,6 +82,7 @@ class TrackingProvider with ChangeNotifier {
   
   // Check location permission
   Future<void> _checkLocationPermission() async {
+    /*
     bool serviceEnabled = await _location.serviceEnabled();
     if (!serviceEnabled) {
       serviceEnabled = await _location.requestService();
@@ -94,15 +98,18 @@ class TrackingProvider with ChangeNotifier {
         return;
       }
     }
+    */
     
-    _locationPermissionGranted = true;
+    _locationPermissionGranted = false; // Default to false while commented
     notifyListeners();
   }
   
   // Get current location
   Future<void> _getCurrentLocation() async {
     try {
-      _currentLocation = await _location.getLocation();
+      // _currentLocation = await _location.getLocation();
+      // Temporary hard-coded location (Kathmandu)
+      _currentLocation = {"latitude": 27.7172, "longitude": 85.3240};
       notifyListeners();
     } catch (e) {
       print('Error getting location: $e');
@@ -112,6 +119,7 @@ class TrackingProvider with ChangeNotifier {
   // Start location updates
   void _startLocationUpdates() {
     try {
+      /*
       _locationSubscription = _location.onLocationChanged.listen((LocationData locationData) {
         _currentLocation = locationData;
         notifyListeners();
@@ -121,6 +129,7 @@ class TrackingProvider with ChangeNotifier {
           _sendOfficerLocation();
         }
       });
+      */
     } catch (e) {
       print('Error starting location updates: $e');
     }
@@ -134,11 +143,11 @@ class TrackingProvider with ChangeNotifier {
       await ApiService.instance.post(
         'officer-locations/',
         {
-          'latitude': _currentLocation!.latitude,
-          'longitude': _currentLocation!.longitude,
-          'accuracy': _currentLocation!.accuracy,
-          'speed': _currentLocation!.speed,
-          'heading': _currentLocation!.heading,
+          'latitude': _currentLocation['latitude'],
+          'longitude': _currentLocation['longitude'],
+          'accuracy': 0, // Assuming no accuracy data
+          'speed': 0, // Assuming no speed data
+          'heading': 0, // Assuming no heading data
           'is_active': true,
           'battery_level': 100, // TODO: Implement battery level detection
         },
@@ -160,7 +169,7 @@ class TrackingProvider with ChangeNotifier {
       _mapController!.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
-            target: LatLng(_currentLocation!.latitude!, _currentLocation!.longitude!),
+            target: LatLng(_currentLocation['latitude'], _currentLocation['longitude']),
             zoom: Constants.defaultMapZoom,
           ),
         ),
@@ -250,8 +259,8 @@ class TrackingProvider with ChangeNotifier {
       final response = await ApiService.instance.get(
         'traffic-signals/nearby/',
         queryParameters: {
-          'lat': _currentLocation!.latitude.toString(),
-          'lng': _currentLocation!.longitude.toString(),
+          'lat': _currentLocation['latitude'].toString(),
+          'lng': _currentLocation['longitude'].toString(),
           'radius': _nearbyRadius.toString(),
         },
       );
@@ -275,8 +284,8 @@ class TrackingProvider with ChangeNotifier {
       final response = await ApiService.instance.get(
         'traffic-incidents/nearby/',
         queryParameters: {
-          'lat': _currentLocation!.latitude.toString(),
-          'lng': _currentLocation!.longitude.toString(),
+          'lat': _currentLocation['latitude'].toString(),
+          'lng': _currentLocation['longitude'].toString(),
           'radius': _nearbyRadius.toString(),
         },
       );
@@ -407,7 +416,7 @@ class TrackingProvider with ChangeNotifier {
       _markers.add(
         Marker(
           markerId: const MarkerId('current_location'),
-          position: LatLng(_currentLocation!.latitude!, _currentLocation!.longitude!),
+          position: LatLng(_currentLocation['latitude'], _currentLocation['longitude']),
           infoWindow: const InfoWindow(title: 'Your Location'),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         ),
@@ -510,12 +519,12 @@ class TrackingProvider with ChangeNotifier {
     double dLon = _degreesToRadians(lon2 - lon1);
     
     double a = 
-        (dLat / 2).sin() * (dLat / 2).sin() +
-        (lat1).cos() * (lat2).cos() * (dLon / 2).sin() * (dLon / 2).sin();
-    double c = 2 * (a).sqrt().atan2((1 - a).sqrt());
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_degreesToRadians(lat1)) * math.cos(_degreesToRadians(lat2)) * 
+        math.sin(dLon / 2) * math.sin(dLon / 2);
+    double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
     return radiusOfEarth * c;
-  }
-  
+  }  
   // Convert degrees to radians
   double _degreesToRadians(double degrees) {
     return degrees * (3.141592653589793 / 180);
@@ -524,7 +533,7 @@ class TrackingProvider with ChangeNotifier {
   // Clean up resources
   @override
   void dispose() {
-    _locationSubscription?.cancel();
+    // _locationSubscription?.cancel();
     _dataRefreshTimer?.cancel();
     _mapController?.dispose();
     super.dispose();

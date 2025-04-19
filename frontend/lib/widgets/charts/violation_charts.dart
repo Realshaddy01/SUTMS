@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:sutms_flutter/models/analytics_data.dart';
+import '../../models/analytics_data.dart';
 
 class PaymentStatusPieChart extends StatelessWidget {
   final Map<String, double> paymentStatus;
@@ -84,10 +84,10 @@ class PaymentStatusPieChart extends StatelessWidget {
   }
 }
 
-class ViolationTypeBarChart extends StatelessWidget {
+class ViolationTypeChart extends StatelessWidget {
   final List<ViolationType> violationTypes;
   
-  const ViolationTypeBarChart({Key? key, required this.violationTypes}) : super(key: key);
+  const ViolationTypeChart({Key? key, required this.violationTypes}) : super(key: key);
   
   @override
   Widget build(BuildContext context) {
@@ -111,81 +111,41 @@ class ViolationTypeBarChart extends StatelessWidget {
         const SizedBox(height: 20),
         SizedBox(
           height: 250,
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: topTypes.first.count * 1.2, // 20% buffer on top
-              barTouchData: BarTouchData(enabled: false),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      // Show abbreviated titles on the x-axis
-                      if (value.toInt() >= 0 && value.toInt() < topTypes.length) {
-                        String title = topTypes[value.toInt()].type;
-                        if (title.length > 10) {
-                          title = title.substring(0, 8) + '...';
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            title,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        );
-                      }
-                      return const Text('');
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        value.toInt().toString(),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+          child: ListView.builder(
+            itemCount: topTypes.length,
+            itemBuilder: (context, index) {
+              final item = topTypes[index];
+              final double percentage = item.count / sortedTypes.first.count;
+              
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          item.name,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      );
-                    },
-                    reservedSize: 30,
-                  ),
-                ),
-                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              ),
-              gridData: FlGridData(
-                show: true,
-                horizontalInterval: topTypes.first.count / 5,
-              ),
-              borderData: FlBorderData(show: false),
-              barGroups: List.generate(
-                topTypes.length,
-                (index) {
-                  return BarChartGroupData(
-                    x: index,
-                    barRods: [
-                      BarChartRodData(
-                        toY: topTypes[index].count.toDouble(),
-                        color: Colors.blue.shade300,
-                        width: 20,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(4),
-                          topRight: Radius.circular(4),
+                        const Spacer(),
+                        Text(
+                          item.count.toString(),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(
+                      value: percentage,
+                      backgroundColor: Colors.blue.shade100,
+                      color: Colors.blue,
+                      minHeight: 8,
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ),
       ],
@@ -193,11 +153,10 @@ class ViolationTypeBarChart extends StatelessWidget {
   }
 }
 
-class MonthlyTrendLineChart extends StatelessWidget {
+class MonthlyTrendChart extends StatelessWidget {
   final List<MonthlyCount> monthlyCounts;
-  final String period;
   
-  const MonthlyTrendLineChart({Key? key, required this.monthlyCounts, required this.period}) : super(key: key);
+  const MonthlyTrendChart({Key? key, required this.monthlyCounts}) : super(key: key);
   
   @override
   Widget build(BuildContext context) {
@@ -213,101 +172,50 @@ class MonthlyTrendLineChart extends StatelessWidget {
     
     return Column(
       children: [
-        Text(
-          period == 'week' ? 'Daily Trend' : 'Monthly Trend',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        const Text(
+          'Monthly Violations',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 20),
         SizedBox(
           height: 250,
-          child: LineChart(
-            LineChartData(
-              gridData: FlGridData(
-                show: true,
-                horizontalInterval: maxCount / 5,
-              ),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      if (value.toInt() >= 0 && value.toInt() < sortedCounts.length) {
-                        String date = sortedCounts[value.toInt()].month;
-                        // Format the date for display
-                        if (period == 'week') {
-                          // For weekly view, show day-month
-                          if (date.length >= 10) {
-                            date = date.substring(8, 10) + '-' + date.substring(5, 7);
-                          }
-                        } else {
-                          // For monthly view, show month-year
-                          if (date.length >= 7) {
-                            date = date.substring(5, 7) + '-' + date.substring(2, 4);
-                          }
-                        }
-                        
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            date,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ListView.builder(
+              itemCount: sortedCounts.length,
+              itemBuilder: (context, index) {
+                final item = sortedCounts[index];
+                final double percentage = item.count / maxCount;
+                
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            item.month,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                        );
-                      }
-                      return const Text('');
-                    },
+                          const Spacer(),
+                          Text(
+                            item.count.toString(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: percentage,
+                        backgroundColor: Colors.green.shade100,
+                        color: Colors.green,
+                        minHeight: 8,
+                      ),
+                    ],
                   ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        value.toInt().toString(),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      );
-                    },
-                    reservedSize: 30,
-                  ),
-                ),
-                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              ),
-              borderData: FlBorderData(
-                show: true,
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              minX: 0,
-              maxX: sortedCounts.length - 1,
-              minY: 0,
-              maxY: maxCount * 1.2, // Add 20% buffer at top
-              lineBarsData: [
-                LineChartBarData(
-                  spots: List.generate(
-                    sortedCounts.length,
-                    (index) => FlSpot(
-                      index.toDouble(),
-                      sortedCounts[index].count.toDouble(),
-                    ),
-                  ),
-                  isCurved: true,
-                  color: Colors.blue,
-                  barWidth: 3,
-                  isStrokeCapRound: true,
-                  dotData: FlDotData(show: true),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    color: Colors.blue.withOpacity(0.2),
-                  ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ),
@@ -318,9 +226,8 @@ class MonthlyTrendLineChart extends StatelessWidget {
 
 class RevenueTrendChart extends StatelessWidget {
   final List<RevenueTrend> revenueTrend;
-  final String period;
   
-  const RevenueTrendChart({Key? key, required this.revenueTrend, required this.period}) : super(key: key);
+  const RevenueTrendChart({Key? key, required this.revenueTrend}) : super(key: key);
   
   @override
   Widget build(BuildContext context) {
@@ -330,11 +237,7 @@ class RevenueTrendChart extends StatelessWidget {
     
     // Sort revenue by date
     final sortedRevenue = List<RevenueTrend>.from(revenueTrend)
-      ..sort((a, b) {
-        String aDate = a.date ?? a.month ?? '';
-        String bDate = b.date ?? b.month ?? '';
-        return aDate.compareTo(bDate);
-      });
+      ..sort((a, b) => a.date.compareTo(b.date));
     
     final maxAmount = sortedRevenue.map((e) => e.amount).reduce((a, b) => a > b ? a : b);
     
@@ -347,92 +250,43 @@ class RevenueTrendChart extends StatelessWidget {
         const SizedBox(height: 20),
         SizedBox(
           height: 250,
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: maxAmount * 1.2, // 20% buffer on top
-              barTouchData: BarTouchData(enabled: false),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      if (value.toInt() >= 0 && value.toInt() < sortedRevenue.length) {
-                        String date = period == 'week' 
-                            ? (sortedRevenue[value.toInt()].date ?? '')
-                            : (sortedRevenue[value.toInt()].month ?? '');
-                            
-                        // Format the date for display
-                        if (period == 'week') {
-                          // For weekly view, show day-month
-                          if (date.length >= 10) {
-                            date = date.substring(8, 10) + '-' + date.substring(5, 7);
-                          }
-                        } else {
-                          // For monthly view, show month-year
-                          if (date.length >= 7) {
-                            date = date.substring(5, 7) + '-' + date.substring(2, 4);
-                          }
-                        }
-                        
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            date,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: ListView.builder(
+              itemCount: sortedRevenue.length,
+              itemBuilder: (context, index) {
+                final item = sortedRevenue[index];
+                final double percentage = item.amount / maxAmount;
+                
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            item.date,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                        );
-                      }
-                      return const Text('');
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        value.toInt().toString(),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      );
-                    },
-                    reservedSize: 40,
-                  ),
-                ),
-                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              ),
-              gridData: FlGridData(
-                show: true,
-                horizontalInterval: maxAmount / 5,
-              ),
-              borderData: FlBorderData(show: false),
-              barGroups: List.generate(
-                sortedRevenue.length,
-                (index) {
-                  return BarChartGroupData(
-                    x: index,
-                    barRods: [
-                      BarChartRodData(
-                        toY: sortedRevenue[index].amount,
-                        color: Colors.green.shade400,
-                        width: 20,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(4),
-                          topRight: Radius.circular(4),
-                        ),
+                          const Spacer(),
+                          Text(
+                            '₹${item.amount.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: percentage,
+                        backgroundColor: Colors.orange.shade100,
+                        color: Colors.orange,
+                        minHeight: 8,
                       ),
                     ],
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
           ),
         ),

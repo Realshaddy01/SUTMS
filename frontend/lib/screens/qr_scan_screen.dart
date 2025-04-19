@@ -1,9 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'dart:io';
 import 'dart:convert';
-import '../providers/auth_provider.dart';
 import '../providers/vehicle_provider.dart';
 import '../widgets/loading_indicator.dart';
 import '../models/vehicle.dart';
@@ -31,6 +30,12 @@ class _QRScanScreenState extends State<QRScanScreen> {
     } else if (Platform.isIOS) {
       controller?.resumeCamera();
     }
+  }
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
   }
 
   @override
@@ -67,25 +72,16 @@ class _QRScanScreenState extends State<QRScanScreen> {
                       left: 0,
                       right: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(16.0),
                         color: Colors.black54,
+                        padding: const EdgeInsets.all(16),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Text(
-                              'Align QR code within the frame',
+                              'Position the QR code in the scanning area',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Make sure the QR code is well-lit and clearly visible',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
+                                fontSize: 14,
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -135,6 +131,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
             MediaQuery.of(context).size.height < 400)
         ? 200.0
         : 300.0;
+    
     return QRView(
       key: qrKey,
       onQRViewCreated: _onQRViewCreated,
@@ -150,7 +147,10 @@ class _QRScanScreenState extends State<QRScanScreen> {
   }
 
   void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
+    setState(() {
+      this.controller = controller;
+    });
+    
     controller.scannedDataStream.listen((scanData) async {
       if (_isScanning && scanData.code != null) {
         setState(() {
@@ -186,13 +186,12 @@ class _QRScanScreenState extends State<QRScanScreen> {
 
   Future<void> _verifyVehicle(Map<String, dynamic> qrData) async {
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final vehicleProvider = Provider.of<VehicleProvider>(context, listen: false);
       
-      final vehicle = await vehicleProvider.verifyVehicleByQRData(
-        authProvider.user!.token,
-        qrData,
-      );
+      // Get QR data as a string (JSON stringified)
+      final String qrDataString = json.encode(qrData);
+      
+      final vehicle = await vehicleProvider.verifyVehicleByQRData(qrDataString);
       
       setState(() {
         _isLoading = false;
@@ -217,108 +216,59 @@ class _QRScanScreenState extends State<QRScanScreen> {
   }
 
   Widget _buildVehicleDetailsView() {
-    final vehicle = _scannedVehicle!;
-    
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Vehicle Verified',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
-                        ),
-                      ),
-                      const Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                        size: 32,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade100,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Icons.directions_car,
-                        size: 80,
-                        color: Colors.blue.shade800,
-                      ),
+                  const Text(
+                    'Vehicle Information',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
                   ),
-                  const SizedBox(height: 16),
                   const Divider(),
-                  const SizedBox(height: 8),
-                  _buildInfoRow('License Plate', vehicle.licensePlate),
-                  _buildInfoRow('Make', vehicle.make),
-                  _buildInfoRow('Model', vehicle.model),
-                  _buildInfoRow('Year', vehicle.year.toString()),
-                  _buildInfoRow('Color', vehicle.color),
-                  _buildInfoRow('Registration', vehicle.registrationNumber),
-                  _buildInfoRow('Owner', vehicle.ownerName),
+                  _buildDetailRow('License Plate', _scannedVehicle?.licensePlate),
+                  _buildDetailRow('Make', _scannedVehicle?.make),
+                  _buildDetailRow('Model', _scannedVehicle?.model),
+                  _buildDetailRow('Year', _scannedVehicle?.year.toString()),
+                  _buildDetailRow('Color', _scannedVehicle?.color),
+                  _buildDetailRow('Owner', _scannedVehicle?.ownerName),
+                  _buildDetailRow('Registration', _scannedVehicle?.registrationNumber),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/camera',
-                      arguments: vehicle,
-                    );
-                  },
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('Record Violation'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ],
-          ),
           const SizedBox(height: 16),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      _scannedVehicle = null;
-                      _isScanning = true;
-                      _error = null;
-                    });
-                    controller?.resumeCamera();
-                  },
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('Scan Another'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Done'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _scannedVehicle = null;
+                    _isScanning = true;
+                  });
+                  controller?.resumeCamera();
+                },
+                child: const Text('Scan Another'),
               ),
             ],
           ),
@@ -327,38 +277,30 @@ class _QRScanScreenState extends State<QRScanScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildDetailRow(String label, String? value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 100,
             child: Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
+                color: Colors.grey,
               ),
             ),
           ),
           Expanded(
             child: Text(
-              value,
-              style: const TextStyle(
-                fontSize: 16,
-              ),
+              value ?? 'Not available',
+              style: const TextStyle(fontSize: 16),
             ),
           ),
         ],
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
   }
 }

@@ -5,7 +5,6 @@ import '../providers/auth_provider.dart';
 import '../providers/violation_provider.dart';
 import '../widgets/violation_card.dart';
 import '../widgets/loading_indicator.dart';
-import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 
 class ViolationScreen extends StatefulWidget {
@@ -58,12 +57,13 @@ class _ViolationScreenState extends State<ViolationScreen> with SingleTickerProv
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
       
-      await violationProvider.fetchViolations(
-        authProvider.user!.token, 
-        authProvider.userType
-      );
+      // Load violations first
+      await violationProvider.fetchViolations(status: null, period: null, userType: authProvider.userType);
       
-      await violationProvider.fetchViolationTypes(authProvider.user!.token);
+      // Load violation types if token is available
+      if (authProvider.user?.token != null) {
+        await violationProvider.fetchViolationTypesWithToken(authProvider.user!.token);
+      }
     } catch (e) {
       setState(() {
         _error = 'Failed to load violations. Please try again.';
@@ -86,12 +86,10 @@ class _ViolationScreenState extends State<ViolationScreen> with SingleTickerProv
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
       
       _selectedViolation = await violationProvider.getViolationById(
-        authProvider.user!.token,
-        _violationIdToView!,
+        int.parse(_violationIdToView!),
       );
       
       if (_selectedViolation != null) {
@@ -121,12 +119,12 @@ class _ViolationScreenState extends State<ViolationScreen> with SingleTickerProv
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (violation.evidenceImageUrl != null) ...[
+              if (violation.evidenceImage != null) ...[
                 Center(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
-                      violation.evidenceImageUrl!,
+                      violation.evidenceImage!,
                       height: 200,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -188,21 +186,20 @@ class _ViolationScreenState extends State<ViolationScreen> with SingleTickerProv
               ),
               
               // Payment Status
-              if (violation.paymentStatus != null)
-                ListTile(
-                  title: const Text('Payment Status'),
-                  subtitle: Text(
-                    violation.paymentStatusDisplayText,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: _getPaymentStatusColor(violation.paymentStatus!),
-                    ),
+              ListTile(
+                title: const Text('Payment Status'),
+                subtitle: Text(
+                  violation.paymentStatusDisplayText,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _getPaymentStatusColor(violation.paymentStatus),
                   ),
-                  leading: const Icon(Icons.payment),
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
                 ),
+                leading: const Icon(Icons.payment),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
               
               // Vehicle
               ListTile(
@@ -232,7 +229,7 @@ class _ViolationScreenState extends State<ViolationScreen> with SingleTickerProv
               ListTile(
                 title: const Text('Location'),
                 subtitle: Text(
-                  violation.location,
+                  violation.location ?? 'Unknown location',
                   style: const TextStyle(fontSize: 16),
                 ),
                 leading: const Icon(Icons.location_on),
@@ -377,7 +374,7 @@ class _ViolationScreenState extends State<ViolationScreen> with SingleTickerProv
               }
               
               Navigator.of(context).pop();
-              await _contestViolation(violation.id, _contestReasonController.text.trim());
+              await _contestViolation(violation.id.toString(), _contestReasonController.text.trim());
             },
             style: TextButton.styleFrom(foregroundColor: Colors.orange),
             child: const Text('Submit Contest'),
@@ -394,12 +391,10 @@ class _ViolationScreenState extends State<ViolationScreen> with SingleTickerProv
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
       
       final success = await violationProvider.contestViolation(
-        authProvider.user!.token,
-        violationId,
+        int.parse(violationId),
         reason,
       );
       
@@ -508,8 +503,8 @@ class _ViolationScreenState extends State<ViolationScreen> with SingleTickerProv
               onPressed: () {
                 Navigator.pushNamed(context, '/camera');
               },
-              child: const Icon(Icons.camera_alt),
               tooltip: 'Record Violation',
+              child: const Icon(Icons.camera_alt),
             )
           : null,
     );
@@ -549,15 +544,6 @@ class _ViolationScreenState extends State<ViolationScreen> with SingleTickerProv
                   child: ViolationCard(
                     violation: violation,
                     onTap: () => _showViolationDetailsDialog(violation),
-                    onPayPressed: violation.canPay
-                        ? () {
-                            Navigator.pushNamed(
-                              context,
-                              '/payment',
-                              arguments: violation.id,
-                            );
-                          }
-                        : null,
                   ),
                 );
               },

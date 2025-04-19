@@ -59,3 +59,15 @@ def home(request):
         </body>
     </html>
     """)
+
+def home_view(request):
+    """
+    View for the home page
+    """
+    context = {
+        'server_status': {
+            'is_running': True,
+            'message': 'Django server is running successfully'
+        }
+    }
+    return render(request, 'home/index.html', context)

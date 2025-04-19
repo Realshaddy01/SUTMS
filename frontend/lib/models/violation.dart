@@ -1,6 +1,7 @@
-import 'dart:convert';
 import 'user.dart';
 import 'vehicle.dart';
+import 'violation_type.dart';
+import 'package:intl/intl.dart';
 
 class Violation {
   final int id;
@@ -19,6 +20,18 @@ class Violation {
   final Vehicle? vehicle;
   final User? officer;
   final Map<String, dynamic>? payment;
+  final String? licensePlate;
+  final ViolationType? violationTypeObj;
+  final String? evidenceImage;
+  final String? detectedLicensePlate;
+  final double? confidenceScore;
+  final bool? finePaid;
+  final DateTime? paymentDate;
+  final String? appealText;
+  final DateTime? appealDate;
+  final String? appealStatus;
+  final int? daysUntilDeadline;
+  final Map<String, dynamic>? vehicleDetails;
   
   Violation({
     required this.id,
@@ -37,7 +50,60 @@ class Violation {
     this.vehicle,
     this.officer,
     this.payment,
+    this.licensePlate,
+    this.violationTypeObj,
+    this.evidenceImage,
+    this.detectedLicensePlate,
+    this.confidenceScore,
+    this.finePaid,
+    this.paymentDate,
+    this.appealText,
+    this.appealDate,
+    this.appealStatus,
+    this.daysUntilDeadline,
+    this.vehicleDetails,
   });
+  
+  String get violationTypeName => violationTypeObj?.name ?? violationType;
+  String get vehicleLicensePlate => licensePlate ?? vehicle?.licensePlate ?? 'Unknown';
+  String get statusDisplay => getStatusDisplay(status);
+  String get statusDisplayText => getStatusDisplay(status);
+  String get paymentStatus => payment != null ? (payment!['status'] ?? 'UNPAID') : 'UNPAID';
+  String get paymentStatusDisplayText => getPaymentStatusDisplay(paymentStatus);
+  DateTime get createdAtDate => DateTime.parse(createdAt);
+  String get formattedDate => DateFormat('MMM d, yyyy').format(createdAtDate);
+  
+  bool get isPending => status == 'PENDING';
+  bool get isConfirmed => status == 'CONFIRMED';
+  bool get isContested => status == 'CONTESTED';
+  bool get isResolved => status == 'RESOLVED';
+  bool get isCancelled => status == 'CANCELLED';
+  
+  bool get isPayable => !finePaid! && (status == 'CONFIRMED' || status == 'PENDING');
+  bool get isAppealable => status == 'CONFIRMED' && (appealStatus == null || appealStatus == 'REJECTED');
+  bool get canPay => isPayable;
+  bool get canContest => isAppealable;
+  
+  String getStatusDisplay(String status) {
+    switch (status) {
+      case 'PENDING': return 'Pending';
+      case 'CONFIRMED': return 'Confirmed';
+      case 'CONTESTED': return 'Contested';
+      case 'RESOLVED': return 'Resolved';
+      case 'CANCELLED': return 'Cancelled';
+      default: return status;
+    }
+  }
+  
+  String getPaymentStatusDisplay(String status) {
+    switch (status) {
+      case 'PAID': return 'Paid';
+      case 'PROCESSING': return 'Processing';
+      case 'PENDING': return 'Pending';
+      case 'UNPAID': return 'Unpaid';
+      default: return status;
+    }
+  }
   
   factory Violation.fromJson(Map<String, dynamic> json) {
     return Violation(
@@ -57,6 +123,18 @@ class Violation {
       vehicle: json['vehicle'] != null ? Vehicle.fromJson(json['vehicle']) : null,
       officer: json['officer'] != null ? User.fromJson(json['officer']) : null,
       payment: json['payment'],
+      licensePlate: json['license_plate'],
+      violationTypeObj: json['violation_type_obj'] != null ? ViolationType.fromJson(json['violation_type_obj']) : null,
+      evidenceImage: json['evidence_image'],
+      detectedLicensePlate: json['detected_license_plate'],
+      confidenceScore: json['confidence_score']?.toDouble(),
+      finePaid: json['fine_paid'] ?? false,
+      paymentDate: json['payment_date'] != null ? DateTime.parse(json['payment_date']) : null,
+      appealText: json['appeal_text'],
+      appealDate: json['appeal_date'] != null ? DateTime.parse(json['appeal_date']) : null,
+      appealStatus: json['appeal_status'],
+      daysUntilDeadline: json['days_until_deadline'],
+      vehicleDetails: json['vehicle_details'],
     );
   }
   
@@ -78,6 +156,18 @@ class Violation {
       'vehicle': vehicle?.toJson(),
       'officer': officer?.toJson(),
       'payment': payment,
+      'license_plate': licensePlate,
+      'violation_type_obj': violationTypeObj?.toJson(),
+      'evidence_image': evidenceImage,
+      'detected_license_plate': detectedLicensePlate,
+      'confidence_score': confidenceScore,
+      'fine_paid': finePaid,
+      'payment_date': paymentDate?.toIso8601String(),
+      'appeal_text': appealText,
+      'appeal_date': appealDate?.toIso8601String(),
+      'appeal_status': appealStatus,
+      'days_until_deadline': daysUntilDeadline,
+      'vehicle_details': vehicleDetails,
     };
   }
   
@@ -98,6 +188,18 @@ class Violation {
     Vehicle? vehicle,
     User? officer,
     Map<String, dynamic>? payment,
+    String? licensePlate,
+    ViolationType? violationTypeObj,
+    String? evidenceImage,
+    String? detectedLicensePlate,
+    double? confidenceScore,
+    bool? finePaid,
+    DateTime? paymentDate,
+    String? appealText,
+    DateTime? appealDate,
+    String? appealStatus,
+    int? daysUntilDeadline,
+    Map<String, dynamic>? vehicleDetails,
   }) {
     return Violation(
       id: id ?? this.id,
@@ -116,6 +218,18 @@ class Violation {
       vehicle: vehicle ?? this.vehicle,
       officer: officer ?? this.officer,
       payment: payment ?? this.payment,
+      licensePlate: licensePlate ?? this.licensePlate,
+      violationTypeObj: violationTypeObj ?? this.violationTypeObj,
+      evidenceImage: evidenceImage ?? this.evidenceImage,
+      detectedLicensePlate: detectedLicensePlate ?? this.detectedLicensePlate,
+      confidenceScore: confidenceScore ?? this.confidenceScore,
+      finePaid: finePaid ?? this.finePaid,
+      paymentDate: paymentDate ?? this.paymentDate,
+      appealText: appealText ?? this.appealText,
+      appealDate: appealDate ?? this.appealDate,
+      appealStatus: appealStatus ?? this.appealStatus,
+      daysUntilDeadline: daysUntilDeadline ?? this.daysUntilDeadline,
+      vehicleDetails: vehicleDetails ?? this.vehicleDetails,
     );
   }
   

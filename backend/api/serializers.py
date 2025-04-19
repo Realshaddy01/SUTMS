@@ -2,11 +2,37 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from accounts.models import UserProfile
 from vehicles.models import Vehicle, VehicleDocument
-from violations.models import Violation, ViolationType, ViolationAppeal
+from violations.models import Violation, ViolationType, ViolationAppeal, Notification
 from payments.models import Payment, PaymentReceipt
-from ocr.models import LicensePlateDetection, TrainingImage
 
 User = get_user_model()
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
+    user_type = serializers.ChoiceField(choices=User.USER_TYPE_CHOICES, default='vehicle_owner')
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'confirm_password', 
+                 'first_name', 'last_name', 'phone_number', 'user_type',
+                 'address', 'badge_number']
+
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError("Passwords do not match")
+        return data
+
+    def create(self, validated_data):
+        validated_data.pop('confirm_password')
+        password = validated_data.pop('password')
+        user = User.objects.create(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -17,12 +43,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer(required=False)
+    full_name = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'full_name', 'phone_number', 
-                 'role', 'profile_image', 'date_joined', 'profile']
-        read_only_fields = ['id', 'email', 'date_joined']
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'full_name', 
+                 'phone_number', 'user_type', 'profile_picture', 'date_joined', 'profile', 
+                 'address', 'badge_number']
+        read_only_fields = ['id', 'email', 'date_joined', 'full_name']
+    
+    def get_full_name(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip()
         
     def update(self, instance, validated_data):
         profile_data = validated_data.pop('profile', None)
@@ -54,7 +85,7 @@ class VehicleSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'owner_name']
         
     def get_owner_name(self, obj):
-        return obj.owner.full_name if obj.owner else None
+        return obj.owner.get_full_name() if obj.owner else None
 
 
 class VehicleDocumentSerializer(serializers.ModelSerializer):
@@ -69,7 +100,7 @@ class VehicleDocumentSerializer(serializers.ModelSerializer):
 class ViolationTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ViolationType
-        fields = ['id', 'name', 'description', 'code', 'fine_amount', 'penalty_points']
+        fields = ['id', 'name', 'code', 'description', 'is_active', 'fine_amount', 'penalty_points']
 
 
 class ViolationSerializer(serializers.ModelSerializer):
@@ -87,7 +118,7 @@ class ViolationSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'reporter_name', 'is_overdue']
         
     def get_reporter_name(self, obj):
-        return obj.reported_by.full_name if obj.reported_by else None
+        return obj.reported_by.get_full_name() if obj.reported_by else None
 
 
 class ViolationAppealSerializer(serializers.ModelSerializer):
@@ -111,7 +142,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'payer_name', 'receipt_url']
         
     def get_payer_name(self, obj):
-        return obj.paid_by.full_name if obj.paid_by else None
+        return obj.paid_by.get_full_name() if obj.paid_by else None
 
 
 class PaymentReceiptSerializer(serializers.ModelSerializer):
@@ -121,25 +152,10 @@ class PaymentReceiptSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'generated_at']
 
 
-class LicensePlateDetectionSerializer(serializers.ModelSerializer):
-    user_name = serializers.SerializerMethodField()
-    vehicle_details = VehicleSerializer(source='matched_vehicle', read_only=True)
-    
+class NotificationSerializer(serializers.ModelSerializer):
+    """Serializer for the Notification model."""
     class Meta:
-        model = LicensePlateDetection
-        fields = ['id', 'user', 'user_name', 'original_image', 'detected_plate_image',
-                 'detected_text', 'confidence_score', 'matched_vehicle', 'vehicle_details',
-                 'detected_at', 'latitude', 'longitude', 'location_name',
-                 'detection_method', 'processing_time_ms']
-        read_only_fields = ['id', 'detected_at', 'user_name']
-        
-    def get_user_name(self, obj):
-        return obj.user.full_name if obj.user else None
-
-
-class TrainingImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TrainingImage
-        fields = ['id', 'image', 'license_plate_text', 'is_verified',
-                 'verified_by', 'added_by', 'created_at']
-        read_only_fields = ['id', 'created_at', 'verified_by', 'is_verified']
+        model = Notification
+        fields = ['id', 'title', 'message', 'notification_type', 'is_read', 
+                 'created_at', 'link', 'related_violation']
+        read_only_fields = ['created_at']

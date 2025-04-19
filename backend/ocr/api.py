@@ -15,6 +15,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from django.http import JsonResponse
+import cv2
+import numpy as np
 
 from .models import LicensePlateDetection
 from .license_plate_detector import detector
@@ -26,8 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 @api_view(['POST'])
-# For testing purposes, allow unauthenticated access
-# @permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated])
 def detect_license_plate(request):
     """
     API endpoint for detecting license plates in an image.
@@ -39,132 +41,103 @@ def detect_license_plate(request):
         JSON response with detection results
     """
     try:
-        # Check if image was uploaded
         if 'image' not in request.FILES:
-            return Response(
-                {'error': 'No image file provided.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
+            return JsonResponse({'error': 'No image file provided'}, status=400)
+            
         image_file = request.FILES['image']
         
-        # Save image temporarily for processing
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            for chunk in image_file.chunks():
-                temp_file.write(chunk)
-            temp_path = temp_file.name
+        # Save the uploaded image temporarily
+        temp_path = default_storage.save(
+            f'temp/plates/{image_file.name}',
+            ContentFile(image_file.read())
+        )
         
         try:
-            # Process the image with OCR
-            result = ocr.recognize(temp_path)
+            # Read the image
+            image = cv2.imread(temp_path)
+            if image is None:
+                return JsonResponse({'error': 'Could not read image file'}, status=400)
             
-            # If no plate detected, return error
+            # Process the image
+            result = detector.process_image(image)
+            
             if not result['success']:
-                return Response({
-                    'status': 'failed',
-                    'error': result.get('error', 'No license plate detected.')
-                }, status=status.HTTP_200_OK)
-            
-            # Save detection to database
-            with transaction.atomic():
-                # Save the original image
-                user_id = request.user.id if hasattr(request, 'user') and request.user.is_authenticated else 'anonymous'
-                original_img_path = f'detections/originals/{user_id}_{os.path.basename(image_file.name)}'
-                original_img = default_storage.save(original_img_path, image_file)
+                return JsonResponse({'error': result['error']}, status=400)
                 
-                # Save plate image if available
-                plate_img_path = None
-                if result['plate_image'] is not None:
-                    # Convert numpy array to image file
-                    import cv2
-                    _, buffer = cv2.imencode('.jpg', result['plate_image'])
-                    plate_img_content = ContentFile(buffer.tobytes())
-                    plate_img_path = f'detections/plates/{user_id}_{os.path.basename(image_file.name)}'
-                    plate_img = default_storage.save(plate_img_path, plate_img_content)
-                
-                # Create detection record
-                # Get first admin user for anonymous requests
-                from django.contrib.auth import get_user_model
-                User = get_user_model()
-                if hasattr(request, 'user') and request.user.is_authenticated:
-                    user = request.user
-                else:
-                    # Use first admin user or create a new one for testing
-                    user = User.objects.filter(is_staff=True).first()
-                    if not user:
-                        user = User.objects.first()  # Fallback to any user
-                
-                detection = LicensePlateDetection(
-                    user=user,
-                    original_image=original_img,
-                    detected_text=result['text'],
-                    confidence=result['confidence'],
-                    processing_time_ms=result['processing_time_ms'],
-                    status='success' if result['success'] else 'failed'
-                )
-                
-                if plate_img_path:
-                    detection.cropped_plate = plate_img_path
-                
-                # Try to get location from request
-                if 'latitude' in request.data and 'longitude' in request.data:
-                    try:
-                        detection.latitude = float(request.data['latitude'])
-                        detection.longitude = float(request.data['longitude'])
-                    except (ValueError, TypeError):
-                        pass
-                
-                detection.save()
-                
-                # Try to match with vehicle
-                try:
-                    vehicle = Vehicle.objects.filter(license_plate__iexact=result['text']).first()
-                    if vehicle:
-                        detection.matched_vehicle = vehicle
-                        detection.save(update_fields=['matched_vehicle'])
-                except Exception as e:
-                    logger.error("Error finding matching vehicle: %s", str(e))
-            
-            # Prepare response
-            response_data = {
-                'id': detection.id,
-                'status': 'success',
-                'detected_text': detection.detected_text,
-                'confidence': detection.confidence,
-                'processing_time_ms': detection.processing_time_ms,
-                'original_image': request.build_absolute_uri(detection.original_image.url),
-            }
-            
-            if detection.cropped_plate:
-                response_data['cropped_plate'] = request.build_absolute_uri(detection.cropped_plate.url)
-            
-            if detection.matched_vehicle:
-                # Include basic vehicle information
-                response_data['vehicle'] = {
-                    'id': detection.matched_vehicle.id,
-                    'license_plate': detection.matched_vehicle.license_plate,
-                    'make': detection.matched_vehicle.make,
-                    'model': detection.matched_vehicle.model,
-                    'color': detection.matched_vehicle.color,
-                    'year': detection.matched_vehicle.year,
-                    'owner_name': detection.matched_vehicle.owner.get_full_name(),
-                    'is_insured': not detection.matched_vehicle.is_insurance_expired,
-                    'registration_number': detection.matched_vehicle.registration_number
+            # Get vehicle details if available
+            license_plate = result['license_plate']
+            try:
+                vehicle = Vehicle.objects.get(license_plate=license_plate)
+                result['vehicle'] = {
+                    'id': vehicle.id,
+                    'owner_name': vehicle.owner_name,
+                    'make': vehicle.make,
+                    'model': vehicle.model,
+                    'year': vehicle.year,
+                    'color': vehicle.color,
+                    'registration_number': vehicle.registration_number,
+                    'registration_expiry': vehicle.registration_expiry.isoformat() if vehicle.registration_expiry else None,
+                    'violations_count': vehicle.violation_set.count(),
+                    'is_reported_stolen': vehicle.is_reported_stolen,
+                    'tax_clearance': vehicle.tax_clearance
                 }
+            except Vehicle.DoesNotExist:
+                result['vehicle'] = None
+                
+            return JsonResponse(result)
             
-            return Response(response_data, status=status.HTTP_200_OK)
-        
         finally:
-            # Clean up temporary file
-            if os.path.exists(temp_path):
-                os.unlink(temp_path)
-    
+            # Clean up the temporary file
+            if temp_path:
+                default_storage.delete(temp_path)
+                
     except Exception as e:
-        logger.exception("Error processing license plate detection: %s", str(e))
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def lookup_vehicle_by_plate(request):
+    try:
+        license_plate = request.data.get('license_plate')
+        if not license_plate:
+            return JsonResponse({'error': 'License plate is required'}, status=400)
+            
+        try:
+            vehicle = Vehicle.objects.get(license_plate=license_plate)
+            
+            # Get recent violations
+            recent_violations = []
+            for violation in vehicle.violation_set.all()[:5]:
+                recent_violations.append({
+                    'id': violation.id,
+                    'type': violation.violation_type.name,
+                    'date': violation.date.isoformat(),
+                    'location': violation.location,
+                    'fine_amount': float(violation.fine_amount),
+                    'status': violation.status
+                })
+                
+            return JsonResponse({
+                'id': vehicle.id,
+                'owner_name': vehicle.owner_name,
+                'make': vehicle.make,
+                'model': vehicle.model,
+                'year': vehicle.year,
+                'color': vehicle.color,
+                'registration_number': vehicle.registration_number,
+                'registration_expiry': vehicle.registration_expiry.isoformat() if vehicle.registration_expiry else None,
+                'violations_count': vehicle.violation_set.count(),
+                'recent_violations': recent_violations,
+                'is_reported_stolen': vehicle.is_reported_stolen,
+                'tax_clearance': vehicle.tax_clearance
+            })
+            
+        except Vehicle.DoesNotExist:
+            return JsonResponse({'error': 'Vehicle not found'}, status=404)
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @api_view(['PUT'])

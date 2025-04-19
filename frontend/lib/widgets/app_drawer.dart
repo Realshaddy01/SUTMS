@@ -1,15 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 import '../services/api_service.dart';
-import '../providers/auth_provider.dart';
 import '../utils/constants.dart';
-import '../screens/login_screen.dart';
-import '../screens/dashboard_screen.dart';
-import '../screens/map_screen.dart';
-import '../screens/detection_screen.dart';
-import '../screens/violations_screen.dart';
-import '../screens/profile_screen.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({Key? key}) : super(key: key);

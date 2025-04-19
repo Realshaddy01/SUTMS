@@ -32,6 +32,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final config = await AppConfig.load();
       
+      // Sync with ThemeProvider
+      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      themeProvider.setThemeMode(config.isDarkModeEnabled ? ThemeMode.dark : ThemeMode.light);
+      
       setState(() {
         _appConfig = config;
         _isDarkMode = config.isDarkModeEnabled;
@@ -131,12 +135,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: Colors.white,
           ),
         ),
-        children: [
-          const Text(
+        children: const [
+          Text(
             'Smart Urban Traffic Management System is an innovative solution for Nepali traffic officers to report and manage traffic violations efficiently using modern technology.',
           ),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16),
+          Text(
             '© 2023 SUTMS Team. All rights reserved.',
             style: TextStyle(fontSize: 12),
           ),
@@ -159,6 +163,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // Theme settings
                 _buildSectionHeader('Appearance'),
                 _buildSettingsCard([
+                  ListTile(
+                    title: const Text('Theme Mode'),
+                    subtitle: Text(_getThemeModeDisplay()),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: _showThemeModeSelector,
+                  ),
                   SwitchListTile(
                     title: const Text('Dark Mode'),
                     subtitle: const Text('Enable dark theme'),
@@ -339,5 +349,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
       default:
         return code;
     }
+  }
+  
+  String _getThemeModeDisplay() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    switch (themeProvider.themeMode) {
+      case ThemeMode.system:
+        return 'System default';
+      case ThemeMode.light:
+        return 'Light';
+      case ThemeMode.dark:
+        return 'Dark';
+      default:
+        return 'System default';
+    }
+  }
+  
+  void _showThemeModeSelector() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    
+    showDialog(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Select Theme Mode'),
+        children: [
+          _buildThemeModeOption(
+            'System default',
+            ThemeMode.system,
+            themeProvider,
+          ),
+          _buildThemeModeOption(
+            'Light',
+            ThemeMode.light,
+            themeProvider,
+          ),
+          _buildThemeModeOption(
+            'Dark',
+            ThemeMode.dark,
+            themeProvider,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildThemeModeOption(
+    String title,
+    ThemeMode mode,
+    ThemeProvider themeProvider,
+  ) {
+    return SimpleDialogOption(
+      onPressed: () {
+        themeProvider.setThemeMode(mode);
+        setState(() {
+          _isDarkMode = mode == ThemeMode.dark;
+        });
+        _saveSettings();
+        Navigator.pop(context);
+      },
+      child: ListTile(
+        title: Text(title),
+        trailing: themeProvider.themeMode == mode
+            ? Icon(Icons.check, color: Theme.of(context).primaryColor)
+            : null,
+      ),
+    );
   }
 }

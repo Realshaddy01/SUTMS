@@ -1,56 +1,134 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import '../models/user.dart';
+import '../models/auth_result.dart';
 import 'storage_service.dart';
-import 'api_service.dart';
+import '../utils/constants.dart';
 
 class AuthService {
   final StorageService _storageService = StorageService();
-  final _baseUrl = ApiService.baseUrl;
+  final String _baseUrl = Constants.apiBaseUrl;
   final Map<String, String> _headers = {
     'Content-Type': 'application/json',
   };
 
   // Login user
-  Future<AuthResult> login(String email, String password) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/auth/login/'),
-      headers: _headers,
-      body: json.encode({
-        'email': email,
+  Future<AuthResult> login(String emailOrUsername, String password) async {
+    try {
+      // Determine if input is email or username
+      bool isEmail = emailOrUsername.contains('@');
+      
+      final Map<String, dynamic> loginData = {
         'password': password,
-      }),
-    );
+      };
+      
+      // Send both fields to be compatible with different backends
+      if (isEmail) {
+        loginData['email'] = emailOrUsername;
+        loginData['username'] = emailOrUsername;  // Backend will handle email-as-username
+      } else {
+        loginData['username'] = emailOrUsername;
+      }
+      
+      final response = await http.post(
+        Uri.parse('$_baseUrl/auth/login/'),
+        headers: _headers,
+        body: json.encode(loginData),
+      );
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      return AuthResult.fromJson(data);
-    } else {
-      final error = json.decode(response.body);
-      throw Exception(error['error'] ?? 'Failed to login');
+      // Print response for debugging
+      print('Login response status: ${response.statusCode}');
+      print('Login response body: ${response.body.substring(0, min(100, response.body.length))}...');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return AuthResult.fromJson(data);
+      } else {
+        // Try to parse JSON error
+        try {
+          final error = json.decode(response.body);
+          throw Exception(error);
+        } catch (e) {
+          // If it's not valid JSON (e.g., HTML response), throw a more helpful error
+          if (response.body.contains('<!DOCTYPE')) {
+            throw Exception('Server error: The server returned an HTML page instead of JSON. Please check your server configuration.');
+          } else {
+            throw Exception('Failed to login: Status ${response.statusCode}');
+          }
+        }
+      }
+    } catch (e) {
+      print('Login error: $e');
+      rethrow;
     }
   }
 
   // Register new user
-  Future<AuthResult> register(String email, String password, String fullName, String phoneNumber) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/auth/register/'),
-      headers: _headers,
-      body: json.encode({
-        'email': email,
-        'password': password,
-        'full_name': fullName,
-        'phone_number': phoneNumber,
-        'user_type': 'vehicle_owner', // Default to vehicle owner
-      }),
-    );
+  Future<AuthResult> register(String email, String password, String fullName, String phoneNumber, {
+    String? username,
+    String? firstName,
+    String? lastName,
+    String? userType,
+    String? citizenshipNumber,
+    String? address,
+    String? badgeNumber,
+    String? department,
+  }) async {
+    // Split full name into first and last name if not provided
+    if (firstName == null || lastName == null) {
+      final nameParts = fullName.split(' ');
+      firstName = nameParts[0];
+      lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+    }
 
-    if (response.statusCode == 201) {
-      final data = json.decode(response.body);
-      return AuthResult.fromJson(data);
-    } else {
-      final error = json.decode(response.body);
-      throw Exception(error['error'] ?? 'Failed to register');
+    final Map<String, dynamic> data = {
+      'email': email,
+      'password': password,
+      'confirm_password': password,
+      'username': username ?? email.split('@')[0],
+      'first_name': firstName,
+      'last_name': lastName,
+      'user_type': userType ?? 'vehicle_owner',
+      'phone_number': phoneNumber,
+    };
+
+    if (citizenshipNumber != null) data['citizenship_number'] = citizenshipNumber;
+    if (address != null) data['address'] = address;
+    if (badgeNumber != null) data['badge_number'] = badgeNumber;
+    if (department != null) data['department'] = department;
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/auth/register/'),
+        headers: _headers,
+        body: json.encode(data),
+      );
+
+      // Print response for debugging
+      print('Register response status: ${response.statusCode}');
+      print('Register response body: ${response.body.substring(0, min(100, response.body.length))}...');
+
+      if (response.statusCode == 201) {
+        final responseData = json.decode(response.body);
+        return AuthResult.fromJson(responseData);
+      } else {
+        // Try to parse JSON error
+        try {
+          final error = json.decode(response.body);
+          throw Exception(error);
+        } catch (e) {
+          // If it's not valid JSON (e.g., HTML response), throw a more helpful error
+          if (response.body.contains('<!DOCTYPE')) {
+            throw Exception('Server error: The server returned an HTML page instead of JSON. Please check your server configuration.');
+          } else {
+            throw Exception('Failed to register: Status ${response.statusCode}');
+          }
+        }
+      }
+    } catch (e) {
+      print('Registration error: $e');
+      rethrow;
     }
   }
 
@@ -63,7 +141,7 @@ class AuthService {
 
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Token $token',
+      'Authorization': '${Constants.tokenPrefix} $token',
     };
 
     try {
@@ -83,7 +161,7 @@ class AuthService {
   Future<User> getUserProfile(String token) async {
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Token $token',
+      'Authorization': '${Constants.tokenPrefix} $token',
     };
 
     final response = await http.get(
@@ -109,7 +187,7 @@ class AuthService {
 
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Token $token',
+      'Authorization': '${Constants.tokenPrefix} $token',
     };
 
     final response = await http.patch(
@@ -128,7 +206,7 @@ class AuthService {
   }
 
   // Change password
-  Future<bool> changePassword(String oldPassword, String newPassword) async {
+  Future<bool> changePassword(String currentPassword, String newPassword) async {
     final token = await _storageService.getAuthToken();
     if (token == null) {
       throw Exception('Not authenticated');
@@ -136,19 +214,24 @@ class AuthService {
 
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Token $token',
+      'Authorization': '${Constants.tokenPrefix} $token',
     };
 
     final response = await http.post(
-      Uri.parse('$_baseUrl/auth/change_password/'),
+      Uri.parse('$_baseUrl/auth/change-password/'),
       headers: headers,
       body: json.encode({
-        'old_password': oldPassword,
+        'current_password': currentPassword,
         'new_password': newPassword,
       }),
     );
 
-    return response.statusCode == 200;
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      final error = json.decode(response.body);
+      throw Exception(error['error'] ?? 'Failed to change password');
+    }
   }
 
   // Update FCM token
@@ -160,7 +243,7 @@ class AuthService {
 
     final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Token $token',
+      'Authorization': '${Constants.tokenPrefix} $token',
     };
 
     final response = await http.post(
@@ -171,6 +254,11 @@ class AuthService {
       }),
     );
 
-    return response.statusCode == 200;
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      final error = json.decode(response.body);
+      throw Exception(error['error'] ?? 'Failed to update FCM token');
+    }
   }
 }

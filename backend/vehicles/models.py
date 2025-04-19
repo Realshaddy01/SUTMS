@@ -3,6 +3,8 @@ Models for the vehicles app.
 """
 from django.db import models
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.utils import timezone
 try:
     from django.utils.translation import gettext_lazy as _
 except ImportError:
@@ -27,59 +29,67 @@ class VehicleType(models.Model):
         return self.name
 
 
+class VehicleOwner(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20)
+    address = models.TextField()
+    license_number = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='vehicle_owner', null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
 class Vehicle(models.Model):
     """Vehicle model representing a registered vehicle in the system."""
     
-    license_plate = models.CharField(_('license plate'), max_length=50, unique=True)
+    VEHICLE_TYPES = [
+        ('CAR', 'Car'),
+        ('MOTORCYCLE', 'Motorcycle'),
+        ('TRUCK', 'Truck'),
+        ('BUS', 'Bus'),
+    ]
+
+    license_plate = models.CharField(_('license plate'), max_length=20, unique=True)
     nickname = models.CharField(_('nickname'), max_length=100, blank=True)
-    vehicle_type = models.ForeignKey(
-        VehicleType,
-        on_delete=models.PROTECT,
-        related_name='vehicles'
-    )
-    owner = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='owned_vehicles'
-    )
+    vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPES)
+    owner = models.ForeignKey(VehicleOwner, on_delete=models.CASCADE, related_name='vehicles')
     make = models.CharField(_('make'), max_length=100)
     model = models.CharField(_('model'), max_length=100)
-    year = models.PositiveIntegerField(_('year'))
+    year = models.IntegerField()
     color = models.CharField(_('color'), max_length=50)
     vin = models.CharField(_('VIN'), max_length=50, blank=True)
-    registration_number = models.CharField(_('registration number'), max_length=50, blank=True)
-    registration_expiry = models.DateField(_('registration expiry'), null=True, blank=True)
+    registration_number = models.CharField(max_length=50, unique=True)
+    registration_expiry = models.DateField()
     is_insured = models.BooleanField(_('is insured'), default=False)
     insurance_provider = models.CharField(_('insurance provider'), max_length=100, blank=True)
     insurance_policy_number = models.CharField(_('insurance policy number'), max_length=100, blank=True)
-    insurance_expiry = models.DateField(_('insurance expiry'), null=True, blank=True)
-    is_active = models.BooleanField(_('is active'), default=True)
-    registered_at = models.DateTimeField(_('registered at'), auto_now_add=True)
+    insurance_expiry = models.DateField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         verbose_name = _('vehicle')
         verbose_name_plural = _('vehicles')
-        ordering = ['-registered_at']
+        ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.nickname or self.license_plate} ({self.make} {self.model}, {self.year})"
+        return f"{self.nickname or self.license_plate} - {self.make} {self.model}"
     
     qr_code = models.ImageField(_('QR code'), upload_to='vehicle_qrcodes', null=True, blank=True)
     
     @property
     def is_registration_expired(self):
         """Check if the registration has expired."""
-        from django.utils import timezone
-        if not self.registration_expiry:
-            return False
         return self.registration_expiry < timezone.now().date()
     
     @property
     def is_insurance_expired(self):
         """Check if the insurance has expired."""
-        from django.utils import timezone
-        if not self.insurance_expiry:
-            return True  # Consider expired if no expiry date
         return self.insurance_expiry < timezone.now().date()
     
     def generate_qr_code(self):
@@ -93,7 +103,7 @@ class Vehicle(models.Model):
             'license_plate': self.license_plate,
             'registration_number': self.registration_number,
             'vehicle_id': self.id,
-            'vehicle_type': self.vehicle_type.name,
+            'vehicle_type': self.vehicle_type,
             'make': self.make,
             'model': self.model,
             'year': self.year,

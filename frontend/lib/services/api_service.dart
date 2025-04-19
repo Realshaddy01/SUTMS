@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:web_socket_channel/io.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../utils/constants.dart';
+import '../models/notification.dart';
+import '../models/analytics_data.dart';
 
 class ApiService {
   // Singleton instance
@@ -20,7 +20,7 @@ class ApiService {
   String? _username;
   
   // WebSocket connections
-  WebSocketChannel? _trackingChannel;
+  dynamic _trackingChannel;
   
   // Getters
   bool get isAuthenticated => _isAuthenticated;
@@ -109,7 +109,6 @@ class ApiService {
   // Logout and clear auth data
   Future<void> logout() async {
     // Disconnect from WebSocket
-    _trackingChannel?.sink.close();
     _trackingChannel = null;
     
     // Clear auth data
@@ -131,7 +130,7 @@ class ApiService {
   }
 
   // Login with username and password
-  Future<Map<String, dynamic>> login(String username, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
       Uri.parse('${Constants.apiBaseUrl}/auth/login/'),
       headers: {'Content-Type': 'application/json'},
@@ -154,7 +153,7 @@ class ApiService {
   // Register a new user
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     final response = await http.post(
-      Uri.parse('${Constants.apiBaseUrl}/auth/registration/'),
+      Uri.parse('${Constants.apiBaseUrl}/auth/register/'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(userData),
     );
@@ -336,7 +335,7 @@ class ApiService {
   }
   
   // Detect license plate from image
-  Future<Map<String, dynamic>> detectLicensePlate(File imageFile) async {
+  Future<Map<String, dynamic>> detectLicensePlateWithoutToken(File imageFile) async {
     try {
       // Upload image to server for license plate detection
       final response = await uploadImage('ocr/api/detect/', imageFile);
@@ -354,68 +353,502 @@ class ApiService {
     }
   }
   
-  // Connect to WebSocket for real-time tracking data
+  // Connect to WebSocket for real-time tracking data - simplified version
   void connectToWebSocket() {
     if (!_isAuthenticated || _token == null) return;
     
-    // Close existing connection if any
-    _trackingChannel?.sink.close();
-    
-    // Create new connection
+    print('WebSocket functionality is currently disabled.');
+    // Implementation will be added when WebSocket package is properly configured
+  }
+  
+  // Get tracking data via WebSocket - simplified version
+  void requestTrackingData(String action) {
+    if (_trackingChannel != null) {
+      print('WebSocket functionality is currently disabled.');
+      // Implementation will be added when WebSocket package is properly configured
+    }
+  }
+
+  // Get notifications for the current user
+  Future<List<NotificationModel>> getNotifications() async {
     try {
-      _trackingChannel = IOWebSocketChannel.connect(
-        '${Constants.wsBaseUrl}/tracking/',
-        headers: {
-          'Authorization': 'Token $_token',
-        },
-      );
+      final response = await get('notifications/');
       
-      print('Connected to tracking WebSocket');
-      
-      // Request initial data
-      _trackingChannel?.sink.add(jsonEncode({
-        'action': 'get_all_tracking_data'
-      }));
-      
-      // Listen for incoming messages
-      _trackingChannel?.stream.listen(
-        (message) {
-          // Process received data
-          final data = jsonDecode(message);
-          print('Received WebSocket data: ${data['type']}');
-          
-          // TODO: Notify appropriate providers about the data update
-        },
-        onError: (error) {
-          print('WebSocket error: $error');
-          // Attempt to reconnect after a delay
-          Future.delayed(Duration(milliseconds: Constants.reconnectInterval), () {
-            connectToWebSocket();
-          });
-        },
-        onDone: () {
-          print('WebSocket connection closed');
-          // Attempt to reconnect after a delay
-          Future.delayed(Duration(milliseconds: Constants.reconnectInterval), () {
-            connectToWebSocket();
-          });
-        },
-      );
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((item) => NotificationModel.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to load notifications');
+      }
     } catch (e) {
-      print('Failed to connect to WebSocket: $e');
-      // Attempt to reconnect after a delay
-      Future.delayed(Duration(milliseconds: Constants.reconnectInterval), () {
-        connectToWebSocket();
-      });
+      print('Error getting notifications: $e');
+      throw Exception('Failed to load notifications: $e');
     }
   }
   
-  // Get tracking data via WebSocket
-  void requestTrackingData(String action) {
-    if (_trackingChannel != null) {
-      _trackingChannel!.sink.add(jsonEncode({
-        'action': action
-      }));
+  // Get unread notification count
+  Future<int> getUnreadNotificationCount() async {
+    try {
+      final response = await get('notifications/unread-count/');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['count'] ?? 0;
+      } else {
+        throw Exception('Failed to load unread notification count');
+      }
+    } catch (e) {
+      print('Error getting unread count: $e');
+      throw Exception('Failed to load unread notification count: $e');
+    }
+  }
+  
+  // Mark a notification as read
+  Future<bool> markNotificationAsRead(int notificationId) async {
+    try {
+      final response = await patch('notifications/$notificationId/read/', {});
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error marking notification as read: $e');
+      return false;
+    }
+  }
+  
+  // Mark all notifications as read
+  Future<bool> markAllNotificationsAsRead() async {
+    try {
+      final response = await post('notifications/mark-all-read/', {});
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Error marking all notifications as read: $e');
+      return false;
+    }
+  }
+
+  // Get analytics data
+  Future<AnalyticsData> getAnalyticsData(String period) async {
+    try {
+      final response = await get(
+        'analytics/',
+        queryParameters: {'period': period},
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return AnalyticsData.fromJson(data);
+      } else {
+        throw Exception('Failed to get analytics data');
+      }
+    } catch (e) {
+      print('Error getting analytics data: $e');
+      throw Exception('Failed to get analytics data: $e');
+    }
+  }
+
+  // Create a checkout session for payment
+  Future<Map<String, dynamic>> createCheckoutSession(int violationId) async {
+    try {
+      final response = await post(
+        'payments/create-checkout-session/',
+        {'violation_id': violationId},
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to create checkout session');
+      }
+    } catch (e) {
+      print('Error creating checkout session: $e');
+      throw Exception('Failed to create checkout session: $e');
+    }
+  }
+
+  // Verify QR Code
+  Future<Map<String, dynamic>> verifyQRCode(String qrData) async {
+    try {
+      final response = await post(
+        'vehicles/verify-qr/',
+        {'qr_data': qrData},
+      );
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Failed to verify QR code');
+      }
+    } catch (e) {
+      print('Error verifying QR code: $e');
+      throw Exception('Failed to verify QR code: $e');
+    }
+  }
+
+  // Set the authentication token temporarily (without saving to storage)
+  void setTemporaryToken(String token) {
+    _token = token;
+    _isAuthenticated = true;
+  }
+  
+  // Clear the temporary token
+  void clearTemporaryToken() {
+    if (_refreshToken == null) {
+      // Only clear if it was a temporary token (no refresh token)
+      _token = null;
+      _isAuthenticated = false;
+    }
+  }
+  
+  // Get with custom token
+  Future<http.Response> getWithToken(String endpoint, String token, {Map<String, dynamic>? queryParameters}) async {
+    final uri = Uri.parse('${Constants.apiBaseUrl}/$endpoint')
+        .replace(queryParameters: queryParameters);
+    
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Token $token',
+    };
+    
+    return await http.get(uri, headers: headers);
+  }
+  
+  // Post with custom token
+  Future<http.Response> postWithToken(String endpoint, dynamic data, String token) async {
+    final uri = Uri.parse('${Constants.apiBaseUrl}/$endpoint');
+    
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Token $token',
+    };
+    
+    return await http.post(
+      uri,
+      headers: headers,
+      body: jsonEncode(data),
+    );
+  }
+  
+  // Patch with custom token
+  Future<http.Response> patchWithToken(String endpoint, dynamic data, String token) async {
+    final uri = Uri.parse('${Constants.apiBaseUrl}/$endpoint');
+    
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Token $token',
+    };
+    
+    return await http.patch(
+      uri,
+      headers: headers,
+      body: jsonEncode(data),
+    );
+  }
+  
+  // Put with custom token
+  Future<http.Response> putWithToken(String endpoint, dynamic data, String token) async {
+    final uri = Uri.parse('${Constants.apiBaseUrl}/$endpoint');
+    
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': 'Token $token',
+    };
+    
+    return await http.put(
+      uri,
+      headers: headers,
+      body: jsonEncode(data),
+    );
+  }
+  
+  // Delete with custom token
+  Future<http.Response> deleteWithToken(String endpoint, String token) async {
+    final uri = Uri.parse('${Constants.apiBaseUrl}/$endpoint');
+    
+    final headers = {
+      'Accept': 'application/json',
+      'Authorization': 'Token $token',
+    };
+    
+    return await http.delete(uri, headers: headers);
+  }
+  
+  // Upload file with custom token
+  Future<http.Response> uploadFileWithToken(String endpoint, String filePath, String token, {Map<String, dynamic>? fields}) async {
+    final uri = Uri.parse('${Constants.apiBaseUrl}/$endpoint');
+    
+    final request = http.MultipartRequest('POST', uri);
+    
+    // Add authorization header
+    request.headers['Authorization'] = 'Token $token';
+    
+    // Add file
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+    
+    // Add other fields
+    if (fields != null) {
+      fields.forEach((key, value) {
+        request.fields[key] = value.toString();
+      });
+    }
+    
+    // Send the request
+    final streamedResponse = await request.send();
+    
+    // Convert to Response
+    return await http.Response.fromStream(streamedResponse);
+  }
+
+  /// Scan license plate image
+  Future<Map<String, dynamic>> scanLicensePlate(File imageFile, {bool hasInternet = true}) async {
+    try {
+      String url = '${Constants.apiBaseUrl}/api/scan-license-plate/';
+      
+      // Create multipart request
+      var request = http.MultipartRequest('POST', Uri.parse(url));
+      
+      // Add authorization token
+      request.headers['Authorization'] = 'Bearer $_token';
+      
+      // Add internet availability flag
+      request.fields['internet_available'] = hasInternet.toString();
+      
+      // Add image file to request
+      var pic = await http.MultipartFile.fromPath('image', imageFile.path);
+      request.files.add(pic);
+      
+      // Send request
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to scan license plate: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error scanning license plate: $e');
+    }
+  }
+  
+  /// Get list of violation types for dropdowns
+  Future<List<Map<String, dynamic>>> getViolationTypes() async {
+    try {
+      var response = await get('violation-types/');
+      
+      if (response.statusCode == 200) {
+        var data = json.decode(response.body);
+        return List<Map<String, dynamic>>.from(data);
+      } else {
+        throw Exception('Failed to load violation types');
+      }
+    } catch (e) {
+      throw Exception('Error loading violation types: $e');
+    }
+  }
+  
+  /// Report a new violation
+  Future<Map<String, dynamic>> reportViolation({
+    required int vehicleId,
+    required int violationTypeId,
+    required String location,
+    required String description,
+    double? latitude,
+    double? longitude,
+    File? evidenceImage,
+    File? licensePlateImage,
+  }) async {
+    try {
+      String url = '${Constants.apiBaseUrl}/api/report-violation/';
+      
+      // Create multipart request
+      var request = http.MultipartRequest('POST', Uri.parse(url));
+      
+      // Add authorization token
+      request.headers['Authorization'] = 'Bearer $_token';
+      
+      // Add fields
+      request.fields['vehicle_id'] = vehicleId.toString();
+      request.fields['violation_type_id'] = violationTypeId.toString();
+      request.fields['location'] = location;
+      request.fields['description'] = description;
+      
+      if (latitude != null) {
+        request.fields['latitude'] = latitude.toString();
+      }
+      
+      if (longitude != null) {
+        request.fields['longitude'] = longitude.toString();
+      }
+      
+      // Add evidence image if provided
+      if (evidenceImage != null) {
+        var evidenceFile = await http.MultipartFile.fromPath('evidence_image', evidenceImage.path);
+        request.files.add(evidenceFile);
+      }
+      
+      // Add license plate image if provided
+      if (licensePlateImage != null) {
+        var plateFile = await http.MultipartFile.fromPath('license_plate_image', licensePlateImage.path);
+        request.files.add(plateFile);
+      }
+      
+      // Send request
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to report violation: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Error reporting violation: $e');
+    }
+  }
+  
+  /// Get vehicle violations with optional date filters
+  Future<Map<String, dynamic>> getVehicleViolations(
+    int vehicleId, {
+    String? startDate,
+    String? endDate,
+  }) async {
+    try {
+      String url = 'vehicle/$vehicleId/violations/';
+      
+      // Add query parameters if provided
+      if (startDate != null || endDate != null) {
+        List<String> queryParams = [];
+        
+        if (startDate != null) {
+          queryParams.add('start_date=$startDate');
+        }
+        
+        if (endDate != null) {
+          queryParams.add('end_date=$endDate');
+        }
+        
+        url += '?${queryParams.join('&')}';
+      }
+      
+      var response = await getWithToken(url, _token ?? '');
+      return json.decode(response.body);
+    } catch (e) {
+      throw Exception('Error getting vehicle violations: $e');
+    }
+  }
+  
+  /// Submit appeal for a violation
+  Future<Map<String, dynamic>> submitViolationAppeal({
+    required String token,
+    required int violationId,
+    required String reason,
+    File? evidenceFile,
+  }) async {
+    try {
+      // Create the URL for the appeal endpoint
+      String url = '${Constants.apiBaseUrl}/violation-appeals/';
+      
+      // Create multipart request if there's an evidence file
+      if (evidenceFile != null) {
+        var request = http.MultipartRequest('POST', Uri.parse(url));
+        
+        // Add authorization token
+        request.headers['Authorization'] = 'Token $token';
+        
+        // Add fields
+        request.fields['violation'] = violationId.toString();
+        request.fields['reason'] = reason;
+        
+        // Add evidence file if provided
+        var file = await http.MultipartFile.fromPath('evidence_file', evidenceFile.path);
+        request.files.add(file);
+        
+        // Send request
+        var streamedResponse = await request.send();
+        var response = await http.Response.fromStream(streamedResponse);
+        
+        if (response.statusCode == 201) {
+          return json.decode(response.body);
+        } else {
+          throw Exception('Failed to submit appeal: ${response.body}');
+        }
+      } else {
+        // Simple JSON request if no file
+        final response = await postWithToken(
+          'violation-appeals/',
+          {
+            'violation': violationId,
+            'reason': reason,
+          },
+          token,
+        );
+        
+        if (response.statusCode == 201) {
+          return json.decode(response.body);
+        } else {
+          throw Exception('Failed to submit appeal: ${response.body}');
+        }
+      }
+    } catch (e) {
+      throw Exception('Error submitting appeal: $e');
+    }
+  }
+
+  // License plate detection
+  Future<Map<String, dynamic>> detectLicensePlate(File imageFile, String token) async {
+    final uri = Uri.parse('${Constants.apiBaseUrl}/api/detect-license-plate/');
+    
+    // Create multipart request
+    var request = http.MultipartRequest('POST', uri);
+    
+    // Add authorization header
+    request.headers['Authorization'] = 'Token $token';
+    
+    // Add file to request
+    request.files.add(await http.MultipartFile.fromPath(
+      'image',
+      imageFile.path,
+    ));
+    
+    // Send request
+    var response = await request.send();
+    
+    // Check if successful
+    if (response.statusCode == 200) {
+      // Parse response
+      var responseData = await response.stream.bytesToString();
+      return json.decode(responseData);
+    } else {
+      // Handle error
+      var responseData = await response.stream.bytesToString();
+      var error = json.decode(responseData);
+      throw Exception(error['error'] ?? 'Failed to detect license plate');
+    }
+  }
+  
+  // Vehicle lookup by license plate
+  Future<Map<String, dynamic>> lookupVehicleByPlate(String licensePlate, String token) async {
+    final uri = Uri.parse('${Constants.apiBaseUrl}/api/lookup-vehicle/');
+    
+    final response = await http.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Token $token',
+      },
+      body: json.encode({'license_plate': licensePlate}),
+    );
+    
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      var error = json.decode(response.body);
+      throw Exception(error['error'] ?? 'Failed to lookup vehicle');
     }
   }
 }

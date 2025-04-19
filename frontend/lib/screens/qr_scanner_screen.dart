@@ -1,34 +1,32 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({Key? key}) : super(key: key);
 
   @override
-  _QRScannerScreenState createState() => _QRScannerScreenState();
+  State<QRScannerScreen> createState() => _QRScannerScreenState();
 }
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? controller;
+  bool _isScanning = true;
   bool _isProcessing = false;
   bool _isFlashOn = false;
   Map<String, dynamic>? _scanResult;
   
   final _apiService = ApiService();
 
-  // In order to get hot reload working, we need to pause the camera if the platform
-  // is Android, or resume the camera if the platform is iOS.
   @override
   void reassemble() {
     super.reassemble();
     if (Platform.isAndroid) {
-      controller!.pauseCamera();
+      controller?.pauseCamera();
     } else if (Platform.isIOS) {
-      controller!.resumeCamera();
+      controller?.resumeCamera();
     }
   }
 
@@ -38,76 +36,23 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     super.dispose();
   }
 
-  void _onQRViewCreated(QRViewController controller) {
-    setState(() {
-      this.controller = controller;
-    });
-    
-    controller.scannedDataStream.listen((scanData) {
-      if (!_isProcessing && scanData.code != null) {
-        _processQRCode(scanData.code!);
-      }
-    });
-  }
-
-  Future<void> _processQRCode(String data) async {
-    setState(() {
-      _isProcessing = true;
-    });
-    
-    try {
-      final Map<String, dynamic> result = await _apiService.verifyQRCode(data);
-      
-      setState(() {
-        _scanResult = result;
-      });
-      
-      controller?.pauseCamera();
-      
-    } catch (e) {
-      print('Error processing QR code: $e');
-      
-      setState(() {
-        _scanResult = {
-          'success': false,
-          'message': e.toString(),
-        };
-      });
-      
-      controller?.pauseCamera();
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
-    }
-  }
-
-  void _toggleFlash() async {
-    await controller?.toggleFlash();
-    setState(() {
-      _isFlashOn = !_isFlashOn;
-    });
-  }
-
-  void _resumeScanning() {
-    setState(() {
-      _scanResult = null;
-    });
-    controller?.resumeCamera();
-  }
-
   Widget _buildScannerView() {
+    var scanArea = (MediaQuery.of(context).size.width < 400 ||
+            MediaQuery.of(context).size.height < 400)
+        ? 200.0
+        : 300.0;
+
     return Stack(
       children: [
         QRView(
           key: qrKey,
           onQRViewCreated: _onQRViewCreated,
           overlay: QrScannerOverlayShape(
-            borderColor: Theme.of(context).primaryColor,
+            borderColor: Theme.of(context).colorScheme.secondary,
             borderRadius: 10,
             borderLength: 30,
             borderWidth: 10,
-            cutOutSize: 300,
+            cutOutSize: scanArea,
           ),
         ),
         // Controls
@@ -123,11 +68,11 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                 heroTag: 'flash',
                 onPressed: _toggleFlash,
                 backgroundColor: Colors.white.withOpacity(0.7),
+                mini: true,
                 child: Icon(
                   _isFlashOn ? Icons.flash_on : Icons.flash_off,
                   color: Colors.black,
                 ),
-                mini: true,
               ),
             ],
           ),
@@ -160,6 +105,80 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         ),
       ],
     );
+  }
+
+  void _onQRViewCreated(QRViewController controller) {
+    setState(() {
+      this.controller = controller;
+    });
+    controller.scannedDataStream.listen((scanData) {
+      if (_isScanning && !_isProcessing && scanData.code != null) {
+        _processQRCode(scanData.code!);
+      }
+    });
+  }
+
+  Future<void> _processQRCode(String data) async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isProcessing = true;
+    });
+    
+    try {
+      final Map<String, dynamic> result = await _apiService.verifyQRCode(data);
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _scanResult = result;
+      });
+      
+      controller?.pauseCamera();
+      
+    } catch (e) {
+      debugPrint('Error processing QR code: $e');
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
+      
+      setState(() {
+        _scanResult = {
+          'success': false,
+          'message': e.toString(),
+        };
+      });
+      
+      controller?.pauseCamera();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isProcessing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _toggleFlash() async {
+    try {
+      await controller?.toggleFlash();
+      setState(() {
+        _isFlashOn = !_isFlashOn;
+      });
+    } catch (e) {
+      debugPrint('Error toggling flash: $e');
+    }
+  }
+
+  void _resumeScanning() {
+    setState(() {
+      _isScanning = true;
+      _scanResult = null;
+    });
+    controller?.resumeCamera();
   }
 
   Widget _buildResultView() {

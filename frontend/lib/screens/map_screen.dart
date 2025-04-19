@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:flutter_heatmap_map/flutter_heatmap_map.dart';
 
 import '../providers/tracking_provider.dart';
 import '../providers/map_provider.dart';
@@ -48,7 +47,7 @@ class _MapScreenState extends State<MapScreen> {
         elevation: Constants.appBarElevation,
         actions: [
           IconButton(
-            icon: Icon(_showStatistics ? Icons.bar_chart_off : Icons.bar_chart),
+            icon: Icon(_showStatistics ? Icons.bar_chart : Icons.insert_chart),
             onPressed: () {
               setState(() {
                 _showStatistics = !_showStatistics;
@@ -116,20 +115,15 @@ class _MapScreenState extends State<MapScreen> {
             },
           ),
           
-          // Heatmap Layer
+          // Heatmap Layer - Temporarily removed as package is not available
           Consumer<MapProvider>(
             builder: (context, mapProvider, _) {
               if (!mapProvider.showHotspots || mapProvider.hotspotPoints.isEmpty) {
                 return const SizedBox.shrink();
               }
               
-              return HeatmapLayer(
-                points: mapProvider.hotspotPoints,
-                gradient: HeatmapGradient.defaultGradient,
-                radius: 20,
-                blur: 15,
-                opacity: 0.7,
-              );
+              // TODO: Implement alternative heatmap visualization
+              return const SizedBox.shrink();
             },
           ),
           

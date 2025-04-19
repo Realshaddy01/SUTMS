@@ -1,24 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sutms_flutter/providers/auth_provider.dart';
-import 'package:sutms_flutter/screens/analytics_screen.dart';
-import 'package:sutms_flutter/screens/dashboard_screen.dart';
-import 'package:sutms_flutter/screens/profile_screen.dart';
-import 'package:sutms_flutter/screens/vehicle_screen.dart';
-import 'package:sutms_flutter/screens/violations_screen.dart';
-import 'package:sutms_flutter/screens/ocr_screen.dart';
-import 'package:sutms_flutter/screens/qr_scanner_screen.dart';
-import 'package:sutms_flutter/screens/payments_screen.dart';
+import '../providers/auth_provider.dart';
 
 class CustomDrawer extends StatelessWidget {
-  const CustomDrawer({Key? key}) : super(key: key);
+  final String? currentRoute;
+  
+  const CustomDrawer({Key? key, this.currentRoute}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final user = authProvider.currentUser;
-    final isOfficer = user?.role == 'officer';
-    final isAdmin = user?.role == 'admin';
+    final user = authProvider.user;
+    final isOfficer = user?.userType == 'traffic_officer';
+    final isAdmin = user?.userType == 'admin';
     
     return Drawer(
       child: ListView(
@@ -42,7 +36,7 @@ class CustomDrawer extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  user?.fullName ?? user?.username ?? 'User',
+                  user?.fullName ?? 'User',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -65,53 +59,54 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.dashboard),
             title: const Text('Dashboard'),
+            selected: currentRoute == '/home',
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushReplacementNamed(context, '/dashboard');
+              if (currentRoute != '/home') {
+                Navigator.pushReplacementNamed(context, '/home');
+              }
             },
           ),
           
           // My Vehicles - for regular users
-          if (!isOfficer)
+          if (user?.userType == 'vehicle_owner')
             ListTile(
               leading: const Icon(Icons.directions_car),
               title: const Text('My Vehicles'),
+              selected: currentRoute == '/vehicles',
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/vehicles');
+                if (currentRoute != '/vehicles') {
+                  Navigator.pushNamed(context, '/vehicles');
+                }
               },
             ),
           
           // My Violations - for regular users
-          if (!isOfficer)
+          if (user?.userType == 'vehicle_owner')
             ListTile(
               leading: const Icon(Icons.report_problem),
               title: const Text('My Violations'),
+              selected: currentRoute == '/violations',
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/violations');
+                if (currentRoute != '/violations') {
+                  Navigator.pushNamed(context, '/violations');
+                }
               },
             ),
             
-          // Payments - for regular users
-          if (!isOfficer)
-            ListTile(
-              leading: const Icon(Icons.payment),
-              title: const Text('Payments'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/payments');
-              },
-            ),
-          
-          // OCR Detection - for officers
+          // Camera/Record Violation - for officers
           if (isOfficer || isAdmin)
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text('License Plate Detection'),
+              title: const Text('Record Violation'),
+              selected: currentRoute == '/camera',
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/ocr');
+                if (currentRoute != '/camera') {
+                  Navigator.pushNamed(context, '/camera');
+                }
               },
             ),
             
@@ -119,32 +114,27 @@ class CustomDrawer extends StatelessWidget {
           if (isOfficer || isAdmin)
             ListTile(
               leading: const Icon(Icons.qr_code_scanner),
-              title: const Text('Scan Vehicle QR'),
+              title: const Text('Scan QR Code'),
+              selected: currentRoute == '/qr_scan',
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/qr-scanner');
+                if (currentRoute != '/qr_scan') {
+                  Navigator.pushNamed(context, '/qr_scan');
+                }
               },
             ),
             
-          // All Violations - for officers and admins
-          if (isOfficer || isAdmin)
-            ListTile(
-              leading: const Icon(Icons.list_alt),
-              title: const Text('All Violations'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/all-violations');
-              },
-            ),
-            
-          // Analytics - for officers and admins
+          // Analytics - for officers
           if (isOfficer || isAdmin)
             ListTile(
               leading: const Icon(Icons.analytics),
-              title: const Text('Analytics & Reports'),
+              title: const Text('Analytics'),
+              selected: currentRoute == '/analytics',
               onTap: () {
                 Navigator.pop(context);
-                Navigator.pushNamed(context, '/analytics');
+                if (currentRoute != '/analytics') {
+                  Navigator.pushNamed(context, '/analytics');
+                }
               },
             ),
             
@@ -154,9 +144,12 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.person),
             title: const Text('My Profile'),
+            selected: currentRoute == '/profile',
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/profile');
+              if (currentRoute != '/profile') {
+                Navigator.pushNamed(context, '/profile');
+              }
             },
           ),
           
@@ -164,9 +157,12 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.settings),
             title: const Text('Settings'),
+            selected: currentRoute == '/settings',
             onTap: () {
               Navigator.pop(context);
-              Navigator.pushNamed(context, '/settings');
+              if (currentRoute != '/settings') {
+                Navigator.pushNamed(context, '/settings');
+              }
             },
           ),
           
@@ -174,9 +170,9 @@ class CustomDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Logout'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              authProvider.logout();
+              await authProvider.logout();
               Navigator.pushReplacementNamed(context, '/login');
             },
           ),
@@ -184,4 +180,4 @@ class CustomDrawer extends StatelessWidget {
       ),
     );
   }
-}
+} 

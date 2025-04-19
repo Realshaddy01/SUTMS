@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+// import 'package:location/location.dart' as loc; // Temporarily commented out
 import 'package:provider/provider.dart';
-import 'package:location/location.dart';
+
 import '../providers/violation_provider.dart';
 import '../providers/violation_type_provider.dart';
 import '../utils/constants.dart';
@@ -29,7 +30,12 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
   String? _selectedViolationType;
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
-  late LocationData _locationData;
+  // late loc.LocationData _locationData; // Temporarily commented out
+  // Instead, use a Map to store location data
+  late Map<String, dynamic> _locationData = {
+    'latitude': 27.7172,
+    'longitude': 85.3240
+  };
   bool _isLocationLoading = true;
   bool _isSubmitting = false;
   
@@ -56,10 +62,12 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
       _isLocationLoading = true;
     });
     
-    final location = Location();
+    // Simulated location data since location package is temporarily disabled
+    /*
+    final location = loc.Location();
     
     bool serviceEnabled;
-    PermissionStatus permissionGranted;
+    loc.PermissionStatus permissionGranted;
     
     // Check if location service is enabled
     serviceEnabled = await location.serviceEnabled();
@@ -76,9 +84,9 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
     
     // Check if permission is granted
     permissionGranted = await location.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
+    if (permissionGranted == loc.PermissionStatus.denied) {
       permissionGranted = await location.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) {
+      if (permissionGranted != loc.PermissionStatus.granted) {
         setState(() {
           _isLocationLoading = false;
           _locationController.text = 'Location permission is denied';
@@ -90,18 +98,26 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
     try {
       // Get location
       _locationData = await location.getLocation();
-      
-      setState(() {
-        _isLocationLoading = false;
-        _locationController.text = 'Lat: ${_locationData.latitude}, Lng: ${_locationData.longitude}';
-      });
     } catch (e) {
       print('Error getting location: $e');
       setState(() {
         _isLocationLoading = false;
         _locationController.text = 'Failed to get location';
       });
+      return;
     }
+    */
+    
+    // Use dummy location data instead
+    _locationData = {
+      'latitude': 27.7172,
+      'longitude': 85.3240
+    };
+    
+    setState(() {
+      _isLocationLoading = false;
+      _locationController.text = 'Lat: ${_locationData['latitude']}, Lng: ${_locationData['longitude']}';
+    });
   }
   
   Future<void> _submitViolation() async {
@@ -111,7 +127,7 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
     
     if (_selectedViolationType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Please select a violation type'),
           backgroundColor: Colors.red,
         ),
@@ -136,9 +152,9 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
         'violation_type': _selectedViolationType,
         'description': _descriptionController.text,
         'location': _locationController.text,
-        'latitude': _isLocationLoading ? null : _locationData.latitude,
-        'longitude': _isLocationLoading ? null : _locationData.longitude,
-        'fine_amount': violationType.defaultFine,
+        'latitude': _isLocationLoading ? null : _locationData['latitude'],
+        'longitude': _isLocationLoading ? null : _locationData['longitude'],
+        'fine_amount': violationType.baseFine,
         'image_path': widget.imagePath,
       });
       
@@ -149,14 +165,14 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
       if (result != null) {
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Violation reported successfully'),
             backgroundColor: Colors.green,
           ),
         );
         
         // Navigate back to previous screen after a short delay
-        Future.delayed(Duration(seconds: 2), () {
+        Future.delayed(const Duration(seconds: 2), () {
           Navigator.pop(context);
         });
       } else {
@@ -185,132 +201,130 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Report Violation'),
+        title: const Text('Report Violation'),
         elevation: Constants.appBarElevation,
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: EdgeInsets.all(Constants.defaultPadding),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // License plate and image preview
-                  Card(
-                    elevation: Constants.cardElevation,
-                    child: Padding(
-                      padding: EdgeInsets.all(Constants.defaultPadding),
-                      child: Row(
-                        children: [
-                          if (widget.imagePath != null)
-                            Container(
-                              width: 120,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                image: DecorationImage(
-                                  image: FileImage(File(widget.imagePath!)),
-                                  fit: BoxFit.cover,
-                                ),
+      body: LoadingOverlay(
+        isLoading: _isSubmitting || _isLocationLoading,
+        loadingText: _isSubmitting ? 'Submitting violation...' : 'Getting location...',
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(Constants.defaultPadding),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // License plate and image preview
+                Card(
+                  elevation: Constants.cardElevation,
+                  child: Padding(
+                    padding: const EdgeInsets.all(Constants.defaultPadding),
+                    child: Row(
+                      children: [
+                        if (widget.imagePath != null)
+                          Container(
+                            width: 120,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              image: DecorationImage(
+                                image: FileImage(File(widget.imagePath!)),
+                                fit: BoxFit.cover,
                               ),
-                            ),
-                          SizedBox(width: Constants.defaultPadding),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'License Plate',
-                                  style: Theme.of(context).textTheme.caption,
-                                ),
-                                Text(
-                                  widget.licensePlate,
-                                  style: Theme.of(context).textTheme.headline6,
-                                ),
-                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                  SizedBox(height: Constants.defaultPadding),
-                  
-                  // Violation type dropdown
-                  _buildViolationTypeDropdown(),
-                  
-                  SizedBox(height: Constants.defaultPadding),
-                  
-                  // Description field
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(),
-                    ),
-                    maxLines: 3,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter a description';
-                      }
-                      return null;
-                    },
-                  ),
-                  
-                  SizedBox(height: Constants.defaultPadding),
-                  
-                  // Location field
-                  TextFormField(
-                    controller: _locationController,
-                    decoration: InputDecoration(
-                      labelText: 'Location',
-                      border: OutlineInputBorder(),
-                      suffixIcon: _isLocationLoading
-                          ? Container(
-                              width: 20,
-                              height: 20,
-                              padding: EdgeInsets.all(8),
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
+                        const SizedBox(width: Constants.defaultPadding),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'License Plate',
+                                style: Theme.of(context).textTheme.bodySmall,
                               ),
-                            )
-                          : IconButton(
-                              icon: Icon(Icons.refresh),
-                              onPressed: _getCurrentLocation,
+                              Text(
+                                widget.licensePlate,
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: Constants.defaultPadding),
+                
+                // Violation type dropdown
+                _buildViolationTypeDropdown(),
+                
+                const SizedBox(height: Constants.defaultPadding),
+                
+                // Description field
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Description',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter a description';
+                    }
+                    return null;
+                  },
+                ),
+                
+                const SizedBox(height: Constants.defaultPadding),
+                
+                // Location field
+                TextFormField(
+                  controller: _locationController,
+                  decoration: InputDecoration(
+                    labelText: 'Location',
+                    border: const OutlineInputBorder(),
+                    suffixIcon: _isLocationLoading
+                        ? Container(
+                            width: 20,
+                            height: 20,
+                            padding: const EdgeInsets.all(8),
+                            child: const CircularProgressIndicator(
+                              strokeWidth: 2,
                             ),
-                    ),
-                    readOnly: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Location is required';
-                      }
-                      if (value.contains('disabled') || value.contains('denied') || value.contains('Failed')) {
-                        return 'Valid location is required';
-                      }
-                      return null;
-                    },
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: _getCurrentLocation,
+                          ),
                   ),
-                  
-                  SizedBox(height: Constants.largePadding),
-                  
-                  // Submit button
-                  ElevatedButton(
-                    onPressed: _isSubmitting ? null : _submitViolation,
-                    child: Text('Submit Violation Report'),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 48),
-                    ),
+                  readOnly: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Location is required';
+                    }
+                    if (value.contains('disabled') || value.contains('denied') || value.contains('Failed')) {
+                      return 'Valid location is required';
+                    }
+                    return null;
+                  },
+                ),
+                
+                const SizedBox(height: Constants.largePadding),
+                
+                // Submit button
+                ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitViolation,
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
                   ),
-                ],
-              ),
+                  child: const Text('Submit Violation Report'),
+                ),
+              ],
             ),
           ),
-          
-          if (_isSubmitting) LoadingOverlay(message: 'Submitting violation report...'),
-        ],
+        ),
       ),
     );
   }
@@ -319,7 +333,7 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
     final violationTypeProvider = Provider.of<ViolationTypeProvider>(context);
     
     if (violationTypeProvider.isLoading) {
-      return Center(
+      return const Center(
         child: CircularProgressIndicator(),
       );
     }
@@ -328,7 +342,7 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
       return Center(
         child: Text(
           'Error loading violation types: ${violationTypeProvider.error}',
-          style: TextStyle(color: Colors.red),
+          style: const TextStyle(color: Colors.red),
         ),
       );
     }
@@ -336,7 +350,7 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
     final violationTypes = violationTypeProvider.violationTypes;
     
     return DropdownButtonFormField<String>(
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         labelText: 'Violation Type',
         border: OutlineInputBorder(),
       ),
@@ -344,7 +358,7 @@ class _ViolationFormScreenState extends State<ViolationFormScreen> {
       items: violationTypes.map((type) {
         return DropdownMenuItem<String>(
           value: type.id.toString(),
-          child: Text('${type.name} (Npr ${type.defaultFine})'),
+          child: Text('${type.name} (Npr ${type.baseFine})'),
         );
       }).toList(),
       onChanged: (value) {

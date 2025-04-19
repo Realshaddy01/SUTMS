@@ -11,7 +11,6 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('violations', '0001_initial'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -37,7 +36,6 @@ class Migration(migrations.Migration):
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='updated at')),
                 ('paid_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='payments_made', to=settings.AUTH_USER_MODEL)),
                 ('processed_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='payments_processed', to=settings.AUTH_USER_MODEL)),
-                ('violation', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='payments', to='violations.violation')),
             ],
             options={
                 'verbose_name': 'payment',

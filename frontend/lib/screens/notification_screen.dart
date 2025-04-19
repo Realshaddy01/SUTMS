@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/violation.dart';
+import '../models/notification_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/violation_provider.dart';
 import '../widgets/loading_indicator.dart';
@@ -32,7 +32,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
       
-      await violationProvider.fetchNotifications(authProvider.user!.token);
+      if (authProvider.user == null || authProvider.user!.token == null) {
+        throw Exception('Authentication token not found');
+      }
+      
+      await violationProvider.fetchNotifications(authProvider.user!.token!);
     } catch (e) {
       setState(() {
         _error = 'Failed to load notifications. Please try again.';
@@ -46,62 +50,54 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
   }
   
-  Future<void> _markAllAsRead() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
+  Future<void> _markAsRead(NotificationModel notification) async {
+    if (notification.isRead) return;
+    
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
       
-      final success = await violationProvider.markAllNotificationsAsRead(authProvider.user!.token);
-      
-      if (!success) {
-        setState(() {
-          _error = violationProvider.error ?? 'Failed to mark notifications as read';
-        });
+      if (authProvider.user == null || authProvider.user!.token == null) {
+        throw Exception('Authentication token not found');
       }
-    } catch (e) {
-      setState(() {
-        _error = 'Failed to mark notifications as read. Please try again.';
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-  
-  Future<void> _markAsRead(Notification notification) async {
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
       
       await violationProvider.markNotificationAsRead(
-        authProvider.user!.token,
-        notification.id,
+        notification.id.toString(),
+        authProvider.user!.token!,
       );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to mark notification as read: ${e.toString()}')),
-        );
-      }
+      // Handle error or show a snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to mark notification as read: $e')),
+      );
     }
   }
   
-  void _viewViolationDetails(String violationId) {
-    Navigator.pushNamed(
-      context,
-      '/violations',
+  Future<void> _markAllAsRead() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
+      
+      if (authProvider.user == null || authProvider.user!.token == null) {
+        throw Exception('Authentication token not found');
+      }
+      
+      await violationProvider.markAllNotificationsAsRead(authProvider.user!.token!);
+    } catch (e) {
+      // Handle error or show a snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to mark all notifications as read: $e')),
+      );
+    }
+  }
+  
+  void _viewViolationDetails(int violationId) {
+    Navigator.of(context).pushNamed(
+      '/violations/detail',
       arguments: violationId,
     );
   }
-
+  
   @override
   Widget build(BuildContext context) {
     final violationProvider = Provider.of<ViolationProvider>(context);
@@ -167,7 +163,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         itemBuilder: (context, index) {
                           final notification = notifications[index];
                           return Dismissible(
-                            key: Key(notification.id),
+                            key: Key(notification.id.toString()),
                             direction: DismissDirection.horizontal,
                             onDismissed: (_) {
                               // Mark as read when dismissed
@@ -215,7 +211,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   Text(notification.message),
                                   const SizedBox(height: 4),
                                   Text(
-                                    notification.formattedDate,
+                                    _formatDateTime(notification.createdAt),
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.grey.shade600,
@@ -241,6 +237,23 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       ),
                     ),
     );
+  }
+  
+  String _formatDateTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+    
+    if (difference.inDays > 7) {
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} ${difference.inHours == 1 ? 'hour' : 'hours'} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} ${difference.inMinutes == 1 ? 'minute' : 'minutes'} ago';
+    } else {
+      return 'Just now';
+    }
   }
   
   IconData _getNotificationIcon(String title) {

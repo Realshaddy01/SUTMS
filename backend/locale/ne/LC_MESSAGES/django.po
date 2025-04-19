@@ -1,0 +1,1169 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-04-09 00:03+0545\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+#: accounts/models.py:18
+msgid "Administrator"
+msgstr ""
+
+#: accounts/models.py:19
+msgid "Traffic Officer"
+msgstr ""
+
+#: accounts/models.py:20
+msgid "Vehicle Owner"
+msgstr ""
+
+#: accounts/models.py:22
+msgid "email address"
+msgstr ""
+
+#: accounts/models.py:24
+msgid "user type"
+msgstr ""
+
+#: accounts/models.py:29
+msgid "phone number"
+msgstr ""
+
+#: accounts/models.py:30
+msgid "profile picture"
+msgstr ""
+
+#: accounts/models.py:31 route_planner/models.py:21
+msgid "address"
+msgstr ""
+
+#: accounts/models.py:32
+msgid "badge number"
+msgstr ""
+
+#: accounts/models.py:33
+msgid "FCM token"
+msgstr ""
+
+#: accounts/models.py:52 route_planner/models.py:89
+msgid "user"
+msgstr ""
+
+#: accounts/models.py:53
+msgid "users"
+msgstr ""
+
+#: accounts/models.py:60
+msgid "bio"
+msgstr ""
+
+#: accounts/models.py:61
+msgid "date of birth"
+msgstr ""
+
+#: accounts/models.py:62
+msgid "emergency contact"
+msgstr ""
+
+#: accounts/models.py:63
+msgid "emergency contact name"
+msgstr ""
+
+#: accounts/models.py:64 vehicles/models.py:155
+msgid "is verified"
+msgstr ""
+
+#: accounts/models.py:67
+msgid "user profile"
+msgstr ""
+
+#: accounts/models.py:68
+msgid "user profiles"
+msgstr ""
+
+#: cameras/apps.py:12
+msgid "Traffic Cameras"
+msgstr ""
+
+#: cameras/models.py:10 tracking/models.py:51
+msgid "Offline"
+msgstr ""
+
+#: cameras/models.py:11
+msgid "Connecting"
+msgstr ""
+
+#: cameras/models.py:12
+msgid "Online"
+msgstr ""
+
+#: cameras/models.py:13 payments/models.py:128
+msgid "Error"
+msgstr ""
+
+#: cameras/models.py:17
+msgid "camera ID"
+msgstr ""
+
+#: cameras/models.py:18 tracking/models.py:56 vehicles/models.py:16
+#: violations/models.py:14
+msgid "name"
+msgstr ""
+
+#: cameras/models.py:19 route_planner/models.py:27 route_planner/models.py:139
+#: violations/models.py:66
+msgid "location"
+msgstr ""
+
+#: cameras/models.py:20 route_planner/models.py:20 route_planner/models.py:142
+#: tracking/models.py:133 vehicles/models.py:18 vehicles/models.py:153
+#: violations/models.py:16 violations/models.py:70
+msgid "description"
+msgstr ""
+
+#: cameras/models.py:21
+msgid "URL"
+msgstr ""
+
+#: cameras/models.py:22
+msgid "capture interval (seconds)"
+msgstr ""
+
+#: cameras/models.py:23
+msgid "authentication token"
+msgstr ""
+
+#: cameras/models.py:26 route_planner/models.py:18 tracking/models.py:21
+#: tracking/models.py:58 tracking/models.py:134 violations/models.py:67
+msgid "latitude"
+msgstr ""
+
+#: cameras/models.py:27 route_planner/models.py:19 tracking/models.py:22
+#: tracking/models.py:59 tracking/models.py:135 violations/models.py:68
+msgid "longitude"
+msgstr ""
+
+#: cameras/models.py:30
+msgid "latitude (legacy)"
+msgstr ""
+
+#: cameras/models.py:31
+msgid "longitude (legacy)"
+msgstr ""
+
+#: cameras/models.py:34 payments/models.py:43 tracking/models.py:61
+#: tracking/models.py:144 violations/models.py:75 violations/models.py:125
+msgid "status"
+msgstr ""
+
+#: cameras/models.py:39 route_planner/models.py:145 routing/models.py:76
+#: vehicles/models.py:19 vehicles/models.py:56 violations/models.py:18
+msgid "is active"
+msgstr ""
+
+#: cameras/models.py:40
+msgid "last capture time"
+msgstr ""
+
+#: cameras/models.py:41
+msgid "error message"
+msgstr ""
+
+#: cameras/models.py:42 payments/models.py:80 payments/models.py:141
+#: route_planner/models.py:23 route_planner/models.py:46
+#: route_planner/models.py:93 routing/models.py:73 routing/models.py:101
+msgid "created at"
+msgstr ""
+
+#: cameras/models.py:43 payments/models.py:81 route_planner/models.py:24
+#: route_planner/models.py:47 routing/models.py:102 tracking/models.py:155
+msgid "updated at"
+msgstr ""
+
+#: cameras/models.py:46
+msgid "traffic camera"
+msgstr ""
+
+#: cameras/models.py:47
+msgid "traffic cameras"
+msgstr ""
+
+#: cameras/models.py:60
+msgid "camera"
+msgstr ""
+
+#: cameras/models.py:62
+msgid "captured image"
+msgstr ""
+
+#: cameras/models.py:63 routing/models.py:23 violations/models.py:69
+msgid "timestamp"
+msgstr ""
+
+#: cameras/models.py:64
+msgid "processed"
+msgstr ""
+
+#: cameras/models.py:65
+msgid "plate detected"
+msgstr ""
+
+#: cameras/models.py:66
+msgid "detected plate text"
+msgstr ""
+
+#: cameras/models.py:67
+msgid "confidence"
+msgstr ""
+
+#: cameras/models.py:68
+msgid "detection time (seconds)"
+msgstr ""
+
+#: cameras/models.py:71
+msgid "camera capture"
+msgstr ""
+
+#: cameras/models.py:72
+msgid "camera captures"
+msgstr ""
+
+#: ocr/admin.py:25
+msgid "Detection Results"
+msgstr ""
+
+#: ocr/admin.py:31
+msgid "Images"
+msgstr ""
+
+#: ocr/admin.py:34
+msgid "Location"
+msgstr ""
+
+#: ocr/admin.py:38
+msgid "Timestamps"
+msgstr ""
+
+#: ocr/admin.py:53
+msgid "Image"
+msgstr ""
+
+#: ocr/admin.py:60
+msgid "Has Vehicle"
+msgstr ""
+
+#: ocr/admin.py:68
+msgid "License Plate"
+msgstr ""
+
+#: ocr/admin.py:86
+msgid "Model Details"
+msgstr ""
+
+#: ocr/admin.py:89
+msgid "Metadata"
+msgstr ""
+
+#: ocr/models.py:17 payments/models.py:125
+msgid "Success"
+msgstr ""
+
+#: ocr/models.py:18 payments/models.py:30
+msgid "Failed"
+msgstr ""
+
+#: ocr/models.py:19
+msgid "Manual Entry"
+msgstr ""
+
+#: ocr/models.py:22
+msgid "Automatic"
+msgstr ""
+
+#: ocr/models.py:23
+msgid "Manual"
+msgstr ""
+
+#: ocr/models.py:24
+msgid "API"
+msgstr ""
+
+#: ocr/models.py:36
+msgid "Original Image"
+msgstr ""
+
+#: ocr/models.py:40
+msgid "Cropped Plate"
+msgstr ""
+
+#: ocr/models.py:48
+msgid "Detected Text"
+msgstr ""
+
+#: ocr/models.py:53
+msgid "Corrected Text"
+msgstr ""
+
+#: ocr/models.py:58
+msgid "Confidence"
+msgstr ""
+
+#: ocr/models.py:59
+msgid "Confidence score of the detection (0-100)"
+msgstr ""
+
+#: ocr/models.py:69
+msgid "Matched Vehicle"
+msgstr ""
+
+#: ocr/models.py:82
+msgid "Status"
+msgstr ""
+
+#: ocr/models.py:88
+msgid "Detection Method"
+msgstr ""
+
+#: ocr/models.py:92
+msgid "Processing Time (ms)"
+msgstr ""
+
+#: ocr/models.py:98
+msgid "Is in Training Set"
+msgstr ""
+
+#: ocr/models.py:106 ocr/models.py:131
+msgid "License Plate Detection"
+msgstr ""
+
+#: ocr/models.py:107
+msgid "License Plate Detections"
+msgstr ""
+
+#: ocr/models.py:132
+msgid "Text Recognition"
+msgstr ""
+
+#: ocr/models.py:133
+msgid "Combined Detection and Recognition"
+msgstr ""
+
+#: ocr/models.py:160
+msgid "OCR Model"
+msgstr ""
+
+#: ocr/models.py:161
+msgid "OCR Models"
+msgstr ""
+
+#: ocr/views.py:67 ocr/views.py:236
+msgid "You don't have permission to view this detection."
+msgstr ""
+
+#: ocr/views.py:116 ocr/views.py:177
+msgid "You don't have permission to modify this detection."
+msgstr ""
+
+#: ocr/views.py:125
+msgid "Corrected text cannot be empty."
+msgstr ""
+
+#: ocr/views.py:186
+msgid "Detection has no text to use for training."
+msgstr ""
+
+#: ocr/views.py:205
+msgid "Added to training set successfully."
+msgstr ""
+
+#: payments/models.py:18
+msgid "Credit/Debit Card (Stripe)"
+msgstr ""
+
+#: payments/models.py:19
+msgid "Khalti"
+msgstr ""
+
+#: payments/models.py:20
+msgid "eSewa"
+msgstr ""
+
+#: payments/models.py:21
+msgid "Bank Transfer"
+msgstr ""
+
+#: payments/models.py:22
+msgid "Cash"
+msgstr ""
+
+#: payments/models.py:23 tracking/models.py:124 vehicles/models.py:139
+msgid "Other"
+msgstr ""
+
+#: payments/models.py:27 violations/models.py:42 violations/models.py:108
+msgid "Pending"
+msgstr ""
+
+#: payments/models.py:28
+msgid "Completed"
+msgstr ""
+
+#: payments/models.py:29 tracking/models.py:106
+msgid "Cancelled"
+msgstr ""
+
+#: payments/models.py:31
+msgid "Refunded"
+msgstr ""
+
+#: payments/models.py:35
+msgid "amount"
+msgstr ""
+
+#: payments/models.py:37
+msgid "payment method"
+msgstr ""
+
+#: payments/models.py:48
+msgid "transaction ID"
+msgstr ""
+
+#: payments/models.py:49 payments/models.py:165
+msgid "receipt number"
+msgstr ""
+
+#: payments/models.py:50
+msgid "receipt URL"
+msgstr ""
+
+#: payments/models.py:53
+msgid "Stripe session ID"
+msgstr ""
+
+#: payments/models.py:54
+msgid "Stripe payment intent ID"
+msgstr ""
+
+#: payments/models.py:57
+msgid "Khalti token"
+msgstr ""
+
+#: payments/models.py:58
+msgid "eSewa reference ID"
+msgstr ""
+
+#: payments/models.py:68
+msgid "payment date"
+msgstr ""
+
+#: payments/models.py:69
+msgid "due date"
+msgstr ""
+
+#: payments/models.py:79 tracking/models.py:76
+msgid "notes"
+msgstr ""
+
+#: payments/models.py:84
+msgid "payment"
+msgstr ""
+
+#: payments/models.py:85
+msgid "payments"
+msgstr ""
+
+#: payments/models.py:124
+msgid "Information"
+msgstr ""
+
+#: payments/models.py:126
+msgid "Failure"
+msgstr ""
+
+#: payments/models.py:127
+msgid "Refund"
+msgstr ""
+
+#: payments/models.py:129
+msgid "Warning"
+msgstr ""
+
+#: payments/models.py:134
+msgid "log type"
+msgstr ""
+
+#: payments/models.py:139
+msgid "message"
+msgstr ""
+
+#: payments/models.py:140
+msgid "data"
+msgstr ""
+
+#: payments/models.py:144
+msgid "payment log"
+msgstr ""
+
+#: payments/models.py:145
+msgid "payment logs"
+msgstr ""
+
+#: payments/models.py:166
+msgid "receipt data"
+msgstr ""
+
+#: payments/models.py:167
+msgid "PDF file"
+msgstr ""
+
+#: payments/models.py:168
+msgid "generated at"
+msgstr ""
+
+#: payments/models.py:171
+msgid "payment receipt"
+msgstr ""
+
+#: payments/models.py:172
+msgid "payment receipts"
+msgstr ""
+
+#: route_planner/models.py:17
+msgid "location name"
+msgstr ""
+
+#: route_planner/models.py:22
+msgid "is popular location"
+msgstr ""
+
+#: route_planner/models.py:28
+msgid "locations"
+msgstr ""
+
+#: route_planner/models.py:42 route_planner/models.py:90
+msgid "origin"
+msgstr ""
+
+#: route_planner/models.py:43 route_planner/models.py:91
+msgid "destination"
+msgstr ""
+
+#: route_planner/models.py:44
+msgid "distance (km)"
+msgstr ""
+
+#: route_planner/models.py:45
+msgid "normal duration (minutes)"
+msgstr ""
+
+#: route_planner/models.py:50 route_planner/models.py:65
+msgid "route"
+msgstr ""
+
+#: route_planner/models.py:51
+msgid "routes"
+msgstr ""
+
+#: route_planner/models.py:66
+msgid "day of week"
+msgstr ""
+
+#: route_planner/models.py:67
+msgid "hour of day"
+msgstr ""
+
+#: route_planner/models.py:68
+msgid "traffic factor"
+msgstr ""
+
+#: route_planner/models.py:69
+msgid "Multiplier for travel time. 1.0 = normal, 2.0 = twice as long"
+msgstr ""
+
+#: route_planner/models.py:70 tracking/models.py:27 tracking/models.py:68
+msgid "last updated"
+msgstr ""
+
+#: route_planner/models.py:73 route_planner/models.py:74
+msgid "route traffic data"
+msgstr ""
+
+#: route_planner/models.py:92
+msgid "travel datetime"
+msgstr ""
+
+#: route_planner/models.py:94
+msgid "is favorite"
+msgstr ""
+
+#: route_planner/models.py:97 routing/models.py:79
+msgid "route recommendation"
+msgstr ""
+
+#: route_planner/models.py:98 routing/models.py:80
+msgid "route recommendations"
+msgstr ""
+
+#: route_planner/models.py:110
+msgid "Fastest"
+msgstr ""
+
+#: route_planner/models.py:111
+msgid "Shortest"
+msgstr ""
+
+#: route_planner/models.py:112
+msgid "Alternative"
+msgstr ""
+
+#: route_planner/models.py:115
+msgid "recommendation"
+msgstr ""
+
+#: route_planner/models.py:116 routing/models.py:66
+msgid "route type"
+msgstr ""
+
+#: route_planner/models.py:117
+msgid "total distance (km)"
+msgstr ""
+
+#: route_planner/models.py:118
+msgid "estimated duration (minutes)"
+msgstr ""
+
+#: route_planner/models.py:119
+msgid "route data"
+msgstr ""
+
+#: route_planner/models.py:119
+msgid "JSON containing the full route details"
+msgstr ""
+
+#: route_planner/models.py:122
+msgid "recommended route"
+msgstr ""
+
+#: route_planner/models.py:123
+msgid "recommended routes"
+msgstr ""
+
+#: route_planner/models.py:134 tracking/models.py:110 violations/models.py:20
+msgid "Low"
+msgstr ""
+
+#: route_planner/models.py:135 tracking/models.py:111 violations/models.py:21
+msgid "Medium"
+msgstr ""
+
+#: route_planner/models.py:136 tracking/models.py:112 violations/models.py:22
+msgid "High"
+msgstr ""
+
+#: route_planner/models.py:137 violations/models.py:23
+msgid "Severe"
+msgstr ""
+
+#: route_planner/models.py:140
+msgid "reported by"
+msgstr ""
+
+#: route_planner/models.py:141 tracking/models.py:150 violations/models.py:19
+msgid "severity"
+msgstr ""
+
+#: route_planner/models.py:143
+msgid "start time"
+msgstr ""
+
+#: route_planner/models.py:144
+msgid "end time"
+msgstr ""
+
+#: route_planner/models.py:148
+msgid "traffic jam"
+msgstr ""
+
+#: route_planner/models.py:149
+msgid "traffic jams"
+msgstr ""
+
+#: routing/models.py:16 routing/models.py:61
+msgid "origin latitude"
+msgstr ""
+
+#: routing/models.py:17 routing/models.py:62
+msgid "origin longitude"
+msgstr ""
+
+#: routing/models.py:18 routing/models.py:63
+msgid "destination latitude"
+msgstr ""
+
+#: routing/models.py:19 routing/models.py:64
+msgid "destination longitude"
+msgstr ""
+
+#: routing/models.py:20 routing/models.py:75
+msgid "traffic level (0-100)"
+msgstr ""
+
+#: routing/models.py:21
+msgid "travel time in seconds"
+msgstr ""
+
+#: routing/models.py:22 routing/models.py:72
+msgid "distance in meters"
+msgstr ""
+
+#: routing/models.py:24 routing/models.py:97
+msgid "day of week (0-6, Monday is 0)"
+msgstr ""
+
+#: routing/models.py:25
+msgid "hour of day (0-23)"
+msgstr ""
+
+#: routing/models.py:26
+msgid "is holiday"
+msgstr ""
+
+#: routing/models.py:27
+msgid "is rush hour"
+msgstr ""
+
+#: routing/models.py:28
+msgid "weather condition"
+msgstr ""
+
+#: routing/models.py:31 routing/models.py:32
+msgid "traffic data"
+msgstr ""
+
+#: routing/models.py:51
+msgid "Fastest Route"
+msgstr ""
+
+#: routing/models.py:52
+msgid "Alternate Route"
+msgstr ""
+
+#: routing/models.py:53
+msgid "Least Traffic Route"
+msgstr ""
+
+#: routing/models.py:71
+msgid "estimated travel time in seconds"
+msgstr ""
+
+#: routing/models.py:74
+msgid "route data from Google Maps API"
+msgstr ""
+
+#: routing/models.py:93
+msgid "area name"
+msgstr ""
+
+#: routing/models.py:94
+msgid "center latitude"
+msgstr ""
+
+#: routing/models.py:95
+msgid "center longitude"
+msgstr ""
+
+#: routing/models.py:96
+msgid "radius in meters"
+msgstr ""
+
+#: routing/models.py:98
+msgid "start hour (0-23)"
+msgstr ""
+
+#: routing/models.py:99
+msgid "end hour (0-23)"
+msgstr ""
+
+#: routing/models.py:100
+msgid "average traffic level (0-100)"
+msgstr ""
+
+#: routing/models.py:105
+msgid "peak traffic time"
+msgstr ""
+
+#: routing/models.py:106
+msgid "peak traffic times"
+msgstr ""
+
+#: tracking/models.py:19
+msgid "The officer being tracked"
+msgstr ""
+
+#: tracking/models.py:23
+msgid "accuracy in meters"
+msgstr ""
+
+#: tracking/models.py:24
+msgid "speed in km/h"
+msgstr ""
+
+#: tracking/models.py:25
+msgid "heading in degrees"
+msgstr ""
+
+#: tracking/models.py:26
+msgid "battery level percentage"
+msgstr ""
+
+#: tracking/models.py:30
+msgid "officer location"
+msgstr ""
+
+#: tracking/models.py:31
+msgid "officer locations"
+msgstr ""
+
+#: tracking/models.py:49
+msgid "Operational"
+msgstr ""
+
+#: tracking/models.py:50
+msgid "Under Maintenance"
+msgstr ""
+
+#: tracking/models.py:52
+msgid "Warning Mode"
+msgstr ""
+
+#: tracking/models.py:53
+msgid "Malfunction"
+msgstr ""
+
+#: tracking/models.py:57
+msgid "signal code"
+msgstr ""
+
+#: tracking/models.py:66
+msgid "installation date"
+msgstr ""
+
+#: tracking/models.py:67
+msgid "last maintenance"
+msgstr ""
+
+#: tracking/models.py:79
+msgid "traffic signal"
+msgstr ""
+
+#: tracking/models.py:80
+msgid "traffic signals"
+msgstr ""
+
+#: tracking/models.py:102
+msgid "Reported"
+msgstr ""
+
+#: tracking/models.py:103
+msgid "Responding"
+msgstr ""
+
+#: tracking/models.py:104
+msgid "In Progress"
+msgstr ""
+
+#: tracking/models.py:105
+msgid "Resolved"
+msgstr ""
+
+#: tracking/models.py:113
+msgid "Critical"
+msgstr ""
+
+#: tracking/models.py:117
+msgid "Accident"
+msgstr ""
+
+#: tracking/models.py:118
+msgid "Vehicle Breakdown"
+msgstr ""
+
+#: tracking/models.py:119
+msgid "Road Obstruction"
+msgstr ""
+
+#: tracking/models.py:120
+msgid "Weather Condition"
+msgstr ""
+
+#: tracking/models.py:121
+msgid "Construction"
+msgstr ""
+
+#: tracking/models.py:122
+msgid "Traffic Signal Issue"
+msgstr ""
+
+#: tracking/models.py:123
+msgid "Traffic Congestion"
+msgstr ""
+
+#: tracking/models.py:128
+msgid "incident type"
+msgstr ""
+
+#: tracking/models.py:136
+msgid "reported at"
+msgstr ""
+
+#: tracking/models.py:163
+msgid "resolved at"
+msgstr ""
+
+#: tracking/models.py:164
+msgid "resolution"
+msgstr ""
+
+#: tracking/models.py:172
+msgid "incident"
+msgstr ""
+
+#: tracking/models.py:173
+msgid "incidents"
+msgstr ""
+
+#: vehicles/models.py:17 violations/models.py:15
+msgid "code"
+msgstr ""
+
+#: vehicles/models.py:22
+msgid "vehicle type"
+msgstr ""
+
+#: vehicles/models.py:23
+msgid "vehicle types"
+msgstr ""
+
+#: vehicles/models.py:33
+msgid "license plate"
+msgstr ""
+
+#: vehicles/models.py:34
+msgid "nickname"
+msgstr ""
+
+#: vehicles/models.py:45
+msgid "make"
+msgstr ""
+
+#: vehicles/models.py:46
+msgid "model"
+msgstr ""
+
+#: vehicles/models.py:47
+msgid "year"
+msgstr ""
+
+#: vehicles/models.py:48
+msgid "color"
+msgstr ""
+
+#: vehicles/models.py:49
+msgid "VIN"
+msgstr ""
+
+#: vehicles/models.py:50
+msgid "registration number"
+msgstr ""
+
+#: vehicles/models.py:51
+msgid "registration expiry"
+msgstr ""
+
+#: vehicles/models.py:52
+msgid "is insured"
+msgstr ""
+
+#: vehicles/models.py:53
+msgid "insurance provider"
+msgstr ""
+
+#: vehicles/models.py:54
+msgid "insurance policy number"
+msgstr ""
+
+#: vehicles/models.py:55
+msgid "insurance expiry"
+msgstr ""
+
+#: vehicles/models.py:57
+msgid "registered at"
+msgstr ""
+
+#: vehicles/models.py:60
+msgid "vehicle"
+msgstr ""
+
+#: vehicles/models.py:61
+msgid "vehicles"
+msgstr ""
+
+#: vehicles/models.py:67
+msgid "QR code"
+msgstr ""
+
+#: vehicles/models.py:135
+msgid "Registration"
+msgstr ""
+
+#: vehicles/models.py:136
+msgid "Insurance"
+msgstr ""
+
+#: vehicles/models.py:137
+msgid "Emission Test"
+msgstr ""
+
+#: vehicles/models.py:138
+msgid "Tax Receipt"
+msgstr ""
+
+#: vehicles/models.py:147
+msgid "document type"
+msgstr ""
+
+#: vehicles/models.py:152
+msgid "title"
+msgstr ""
+
+#: vehicles/models.py:154
+msgid "document file"
+msgstr ""
+
+#: vehicles/models.py:163
+msgid "verified at"
+msgstr ""
+
+#: vehicles/models.py:164
+msgid "expiry date"
+msgstr ""
+
+#: vehicles/models.py:165
+msgid "uploaded at"
+msgstr ""
+
+#: vehicles/models.py:168
+msgid "vehicle document"
+msgstr ""
+
+#: vehicles/models.py:169
+msgid "vehicle documents"
+msgstr ""
+
+#: violations/models.py:17
+msgid "base fine"
+msgstr ""
+
+#: violations/models.py:29
+msgid "violation type"
+msgstr ""
+
+#: violations/models.py:30
+msgid "violation types"
+msgstr ""
+
+#: violations/models.py:43 violations/models.py:109
+msgid "Approved"
+msgstr ""
+
+#: violations/models.py:44 violations/models.py:110
+msgid "Rejected"
+msgstr ""
+
+#: violations/models.py:45
+msgid "Paid"
+msgstr ""
+
+#: violations/models.py:46
+msgid "Appealed"
+msgstr ""
+
+#: violations/models.py:47
+msgid "Appeal Approved"
+msgstr ""
+
+#: violations/models.py:48
+msgid "Appeal Rejected"
+msgstr ""
+
+#: violations/models.py:71
+msgid "evidence image"
+msgstr ""
+
+#: violations/models.py:72
+msgid "license plate image"
+msgstr ""
+
+#: violations/models.py:73
+msgid "fine amount"
+msgstr ""
+
+#: violations/models.py:80
+msgid "appeal reason"
+msgstr ""
+
+#: violations/models.py:81
+msgid "appeal date"
+msgstr ""
+
+#: violations/models.py:82
+msgid "appeal decision"
+msgstr ""
+
+#: violations/models.py:83
+msgid "appeal decision date"
+msgstr ""
+
+#: violations/models.py:95
+msgid "violation"
+msgstr ""
+
+#: violations/models.py:96
+msgid "violations"
+msgstr ""
+
+#: violations/models.py:122
+msgid "reason"
+msgstr ""
+
+#: violations/models.py:123
+msgid "evidence file"
+msgstr ""
+
+#: violations/models.py:137
+msgid "review date"
+msgstr ""
+
+#: violations/models.py:138
+msgid "review notes"
+msgstr ""
+
+#: violations/models.py:143
+msgid "violation appeal"
+msgstr ""
+
+#: violations/models.py:144
+msgid "violation appeals"
+msgstr ""

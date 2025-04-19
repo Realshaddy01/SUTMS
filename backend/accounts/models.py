@@ -13,40 +13,43 @@ except ImportError:
 class User(AbstractUser):
     """Custom user model for the SUTMS application."""
     
-    class UserType(models.TextChoices):
-        """User types for role-based access control."""
-        ADMIN = 'admin', _('Administrator')
-        OFFICER = 'officer', _('Traffic Officer')
-        VEHICLE_OWNER = 'vehicle_owner', _('Vehicle Owner')
+    USER_TYPE_CHOICES = (
+        ('vehicle_owner', 'Vehicle Owner'),
+        ('traffic_officer', 'Traffic Officer'),
+        ('admin', 'Administrator'),
+    )
     
     email = models.EmailField(_('email address'), unique=True)
-    user_type = models.CharField(
-        _('user type'),
-        max_length=20,
-        choices=UserType.choices,
-        default=UserType.VEHICLE_OWNER
-    )
-    phone_number = models.CharField(_('phone number'), max_length=20, blank=True)
+    user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='vehicle_owner')
+    phone_number = models.CharField(max_length=15, blank=True, null=True)
     profile_picture = models.ImageField(_('profile picture'), upload_to='profile_pictures', null=True, blank=True)
     address = models.TextField(_('address'), blank=True)
     badge_number = models.CharField(_('badge number'), max_length=50, blank=True)
     fcm_token = models.CharField(_('FCM token'), max_length=255, blank=True)
     
+    @property
+    def profile_pic(self):
+        return self.profile_picture
+        
+    @profile_pic.setter
+    def profile_pic(self, value):
+        self.profile_picture = value
+    
     def is_admin(self):
-        """Check if the user is an administrator."""
-        return self.user_type == self.UserType.ADMIN
+        return self.user_type == 'admin'
     
     def is_officer(self):
-        """Check if the user is a traffic officer."""
-        return self.user_type == self.UserType.OFFICER
+        return self.user_type == 'traffic_officer'
     
     def is_vehicle_owner(self):
-        """Check if the user is a vehicle owner."""
-        return self.user_type == self.UserType.VEHICLE_OWNER
+        return self.user_type == 'vehicle_owner'
+    
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"
     
     def __str__(self):
         """String representation of the user."""
-        return f"{self.get_full_name() or self.username} ({self.get_user_type_display()})"
+        return self.username
     
     class Meta:
         verbose_name = _('user')
@@ -70,3 +73,4 @@ class UserProfile(models.Model):
     def __str__(self):
         """String representation of the user profile."""
         return f"Profile for {self.user.get_full_name() or self.user.username}"
+

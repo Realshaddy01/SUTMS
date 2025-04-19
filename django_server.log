@@ -1,0 +1,115 @@
+INFO 2025-04-06 12:48:09,705 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:49:20,910 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:49:30,424 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:51:26,534 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:52:18,241 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:52:27,825 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:53:18,944 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:53:28,429 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:54:29,543 autoreload Watching for file changes with StatReloader
+WARNING 2025-04-06 12:54:34,231 log Not Found: /api/health/
+WARNING 2025-04-06 12:54:34,233 basehttp "GET /api/health/ HTTP/1.1" 404 3189
+INFO 2025-04-06 12:54:37,730 basehttp "GET /health/ HTTP/1.1" 200 51
+INFO 2025-04-06 12:54:41,105 basehttp "GET / HTTP/1.1" 200 1648
+INFO 2025-04-06 12:55:22,980 autoreload /home/runner/workspace/backend/sutms/urls.py changed, reloading.
+INFO 2025-04-06 12:55:23,514 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:55:50,195 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:56:00,271 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:56:47,373 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 12:56:54,005 basehttp "GET /api/health/ HTTP/1.1" 200 75
+INFO 2025-04-06 12:56:57,156 basehttp "GET /api/ocr/health/ HTTP/1.1" 200 53
+INFO 2025-04-06 13:12:51,977 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 13:12:55,982 basehttp "GET /api/health/ HTTP/1.1" 200 75
+WARNING 2025-04-06 13:13:00,888 log Not Found: /ocr/health/
+WARNING 2025-04-06 13:13:00,892 basehttp "GET /ocr/health/ HTTP/1.1" 404 3336
+INFO 2025-04-06 13:13:13,215 autoreload /home/runner/workspace/backend/sutms/urls.py changed, reloading.
+INFO 2025-04-06 13:13:13,984 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 13:13:22,270 basehttp "GET /ocr/health/ HTTP/1.1" 200 53
+INFO 2025-04-06 13:14:43,478 basehttp "POST /ocr/detect/ HTTP/1.1" 200 263
+INFO 2025-04-06 13:14:47,190 basehttp "HEAD /media/detections/originals/1_test_plate.jpg HTTP/1.1" 200 0
+INFO 2025-04-06 13:15:22,398 basehttp "HEAD /media/detections/plates/1_test_plate.jpg HTTP/1.1" 200 0
+INFO 2025-04-06 13:19:05,344 basehttp "POST /ocr/detect/ HTTP/1.1" 200 270
+INFO 2025-04-06 13:19:13,664 basehttp "POST /ocr/detect/ HTTP/1.1" 200 287
+INFO 2025-04-06 13:58:54,254 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 13:59:04,114 basehttp "GET / HTTP/1.1" 200 1648
+INFO 2025-04-06 14:15:32,945 autoreload /home/runner/workspace/backend/dashboard/__init__.py changed, reloading.
+INFO 2025-04-06 14:15:34,002 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:15:36,959 autoreload /home/runner/workspace/backend/dashboard/apps.py changed, reloading.
+INFO 2025-04-06 14:15:37,733 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:16:20,533 autoreload /home/runner/workspace/backend/sutms/urls.py changed, reloading.
+INFO 2025-04-06 14:16:21,209 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:21:20,584 autoreload /home/runner/workspace/backend/violations/models.py changed, reloading.
+INFO 2025-04-06 14:21:22,210 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:21:25,734 autoreload /home/runner/workspace/backend/dashboard/views.py changed, reloading.
+INFO 2025-04-06 14:21:26,323 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:21:31,925 autoreload /home/runner/workspace/backend/dashboard/views.py changed, reloading.
+INFO 2025-04-06 14:21:32,602 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:21:44,733 autoreload /home/runner/workspace/backend/dashboard/views.py changed, reloading.
+INFO 2025-04-06 14:21:46,727 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:31:52,299 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:31:54,534 basehttp "GET / HTTP/1.1" 200 1648
+INFO 2025-04-06 14:31:55,674 basehttp "GET / HTTP/1.1" 200 1648
+INFO 2025-04-06 14:50:38,998 autoreload /home/runner/workspace/backend/sutms/urls.py changed, reloading.
+INFO 2025-04-06 14:50:42,211 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:53:29,375 autoreload /home/runner/workspace/backend/sutms/settings.py changed, reloading.
+INFO 2025-04-06 14:53:33,763 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:54:01,927 autoreload /home/runner/workspace/backend/route_planner/models.py changed, reloading.
+INFO 2025-04-06 14:54:03,108 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:58:33,955 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 14:58:45,963 basehttp "GET /routes/ HTTP/1.1" 302 0
+INFO 2025-04-06 14:58:46,276 basehttp "GET /accounts/login/?next=/routes/ HTTP/1.1" 200 2357
+INFO 2025-04-06 15:08:42,362 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 15:08:48,990 autoreload Watching for file changes with StatReloader
+WARNING 2025-04-06 15:11:00,239 log Not Found: /ocr/api/detect/
+WARNING 2025-04-06 15:11:00,245 basehttp "POST /ocr/api/detect/ HTTP/1.1" 404 5221
+WARNING 2025-04-06 15:11:12,778 log Unauthorized: /ocr/detect/
+WARNING 2025-04-06 15:11:12,780 basehttp "POST /ocr/detect/ HTTP/1.1" 401 58
+INFO 2025-04-06 15:11:23,411 autoreload /home/runner/workspace/backend/ocr/api.py changed, reloading.
+INFO 2025-04-06 15:11:24,367 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 15:12:02,097 autoreload /home/runner/workspace/backend/ocr/api.py changed, reloading.
+INFO 2025-04-06 15:12:02,656 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 15:12:12,317 autoreload /home/runner/workspace/backend/ocr/api.py changed, reloading.
+INFO 2025-04-06 15:12:12,845 autoreload Watching for file changes with StatReloader
+WARNING 2025-04-06 15:12:27,244 log Unauthorized: /ocr/detect/
+WARNING 2025-04-06 15:12:27,245 basehttp "POST /ocr/detect/ HTTP/1.1" 401 58
+INFO 2025-04-06 15:12:32,702 autoreload Watching for file changes with StatReloader
+WARNING 2025-04-06 15:16:15,683 log Unauthorized: /ocr/detect/
+WARNING 2025-04-06 15:16:15,684 basehttp "POST /ocr/detect/ HTTP/1.1" 401 58
+WARNING 2025-04-06 15:16:29,891 log Unauthorized: /ocr/detect/
+WARNING 2025-04-06 15:16:29,892 basehttp "POST /ocr/detect/ HTTP/1.1" 401 58
+INFO 2025-04-06 15:17:28,189 autoreload /home/runner/workspace/backend/sutms/settings.py changed, reloading.
+INFO 2025-04-06 15:17:28,948 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 15:17:32,613 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 15:17:38,023 basehttp "POST /ocr/detect/ HTTP/1.1" 200 294
+INFO 2025-04-06 15:40:41,931 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 15:40:48,835 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:07:11,704 autoreload /home/runner/workspace/backend/api/urls.py changed, reloading.
+INFO 2025-04-06 16:07:13,242 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:07:40,521 autoreload /home/runner/workspace/backend/sutms/settings.py changed, reloading.
+INFO 2025-04-06 16:07:41,115 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:09:48,637 autoreload /home/runner/workspace/backend/cameras/urls.py changed, reloading.
+INFO 2025-04-06 16:09:49,359 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:10:26,693 autoreload /home/runner/workspace/backend/cameras/views.py changed, reloading.
+INFO 2025-04-06 16:10:27,536 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:11:48,767 autoreload /home/runner/workspace/backend/cameras/views.py changed, reloading.
+INFO 2025-04-06 16:11:49,487 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:12:10,165 autoreload /home/runner/workspace/backend/cameras/models.py changed, reloading.
+INFO 2025-04-06 16:12:10,906 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:12:36,463 autoreload /home/runner/workspace/backend/cameras/urls.py changed, reloading.
+INFO 2025-04-06 16:12:37,351 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:12:44,215 autoreload /home/runner/workspace/backend/api/urls.py changed, reloading.
+INFO 2025-04-06 16:12:44,884 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:13:06,953 autoreload /home/runner/workspace/backend/cameras/views.py changed, reloading.
+INFO 2025-04-06 16:13:08,169 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:17:22,488 autoreload Watching for file changes with StatReloader
+INFO 2025-04-06 16:17:30,158 basehttp "GET / HTTP/1.1" 200 1648
+INFO 2025-04-06 16:36:09,767 basehttp "GET / HTTP/1.1" 200 1648
+INFO 2025-04-07 00:03:10,574 autoreload Watching for file changes with StatReloader
+INFO 2025-04-07 00:05:56,701 autoreload Watching for file changes with StatReloader
+INFO 2025-04-07 00:08:42,636 autoreload Watching for file changes with StatReloader
+INFO 2025-04-07 00:44:36,101 autoreload /Users/rashmita/Downloads/SmartTrafficManager/backend/api/urls.py changed, reloading.
+INFO 2025-04-07 00:44:36,568 autoreload Watching for file changes with StatReloader
+INFO 2025-04-07 06:34:00,189 autoreload /Users/rashmita/Downloads/SmartTrafficManager/backend/manage.py changed, reloading.
+INFO 2025-04-07 06:34:00,610 autoreload Watching for file changes with StatReloader
+INFO 2025-04-07 07:00:18,621 autoreload /Users/rashmita/Downloads/SmartTrafficManager/backend/api/serializers.py changed, reloading.
+INFO 2025-04-07 07:00:19,299 autoreload Watching for file changes with StatReloader

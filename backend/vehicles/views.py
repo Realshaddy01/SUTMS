@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.urls import reverse
 from django.utils import timezone
-from .models import Vehicle, VehicleDocument
+from .models import Vehicle, VehicleDocument, VehicleType
 from violations.models import Violation
 
 # Create your views here.
@@ -14,7 +14,12 @@ def vehicle_list(request):
     """List all vehicles for the logged-in user."""
     if request.user.is_vehicle_owner():
         # For vehicle owners, show only their vehicles
-        vehicles = Vehicle.objects.filter(owner=request.user)
+        try:
+            vehicle_owner = request.user.vehicle_owner
+            vehicles = Vehicle.objects.filter(owner=vehicle_owner)
+        except Exception as e:
+            messages.error(request, f"Error retrieving vehicles: {str(e)}")
+            vehicles = Vehicle.objects.none()
     else:
         # For officers and admins, show all vehicles
         vehicles = Vehicle.objects.all()
@@ -24,8 +29,75 @@ def vehicle_list(request):
 @login_required
 def add_vehicle(request):
     """Add a new vehicle."""
-    # Real implementation to be completed
-    return render(request, 'vehicles/add.html')
+    # Check if user is a vehicle owner
+    if not request.user.is_vehicle_owner():
+        messages.error(request, "Only vehicle owners can add vehicles.")
+        return redirect('dashboard:index')
+    
+    # Get all vehicle types
+    vehicle_types = VehicleType.objects.filter(is_active=True)
+    
+    if request.method == 'POST':
+        # Get form data
+        license_plate = request.POST.get('license_plate')
+        nickname = request.POST.get('nickname', '')
+        vehicle_type_id = request.POST.get('vehicle_type')
+        make = request.POST.get('make')
+        model = request.POST.get('model')
+        year = request.POST.get('year')
+        color = request.POST.get('color')
+        registration_number = request.POST.get('registration_number', '')
+        registration_expiry = request.POST.get('registration_expiry', None)
+        vin = request.POST.get('vin', '')
+        is_insured = request.POST.get('is_insured') == 'on'
+        insurance_provider = request.POST.get('insurance_provider', '')
+        insurance_policy_number = request.POST.get('insurance_policy_number', '')
+        insurance_expiry = request.POST.get('insurance_expiry', None)
+        
+        # Basic validation
+        if not all([license_plate, vehicle_type_id, make, model, year, color]):
+            messages.error(request, "Please fill in all required fields.")
+            return render(request, 'vehicles/add.html', {'vehicle_types': vehicle_types})
+        
+        # Create new vehicle
+        try:
+            vehicle_type = VehicleType.objects.get(id=vehicle_type_id)
+            
+            vehicle = Vehicle.objects.create(
+                license_plate=license_plate,
+                nickname=nickname,
+                vehicle_type=vehicle_type,
+                owner=request.user,
+                make=make,
+                model=model,
+                year=year,
+                color=color,
+                registration_number=registration_number,
+                vin=vin,
+                is_insured=is_insured,
+                insurance_provider=insurance_provider,
+                insurance_policy_number=insurance_policy_number
+            )
+            
+            # Set dates if provided
+            if registration_expiry:
+                vehicle.registration_expiry = registration_expiry
+            if insurance_expiry and is_insured:
+                vehicle.insurance_expiry = insurance_expiry
+            
+            vehicle.save()
+            
+            # Generate QR code
+            vehicle.generate_qr_code()
+            
+            messages.success(request, f"Vehicle {vehicle.license_plate} added successfully.")
+            return redirect('vehicles:detail', vehicle_id=vehicle.id)
+            
+        except Exception as e:
+            messages.error(request, f"Error adding vehicle: {str(e)}")
+            return render(request, 'vehicles/add.html', {'vehicle_types': vehicle_types})
+    
+    return render(request, 'vehicles/add.html', {'vehicle_types': vehicle_types})
 
 @login_required
 def vehicle_detail(request, vehicle_id):

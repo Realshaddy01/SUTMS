@@ -19,6 +19,9 @@ class DashboardCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 360;
+    
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -65,7 +68,7 @@ class DashboardCard extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: isSmallScreen ? 12 : 14,
                 color: Colors.grey[600],
               ),
             ),
@@ -84,11 +87,20 @@ class DashboardCard extends StatelessWidget {
                 ),
               )
             else
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              SizedBox(
+                width: double.infinity,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 16 : 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
           ],

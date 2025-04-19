@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 class User {
   final int id;
@@ -6,21 +5,31 @@ class User {
   final String email;
   final String? fullName;
   final String? phoneNumber;
-  final String role;
-  final bool isActive;
-  final String? createdAt;
-  
+  final String userType;
+  final String? address;
+  final String? badgeNumber;
+  final String? token;
+  final DateTime? createdAt;
+  final bool? isActive;
+
   User({
     required this.id,
     required this.username,
     required this.email,
     this.fullName,
     this.phoneNumber,
-    required this.role,
-    required this.isActive,
+    required this.userType,
+    this.address,
+    this.badgeNumber,
+    this.token,
     this.createdAt,
+    this.isActive,
   });
-  
+
+  bool get isOfficer => userType == 'officer';
+  bool get isAdmin => userType == 'admin';
+  bool get isVehicleOwner => userType == 'vehicle_owner';
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],
@@ -28,12 +37,17 @@ class User {
       email: json['email'],
       fullName: json['full_name'],
       phoneNumber: json['phone_number'],
-      role: json['role'],
-      isActive: json['is_active'],
-      createdAt: json['created_at'],
+      userType: json['user_type'] ?? 'vehicle_owner',
+      address: json['address'],
+      badgeNumber: json['badge_number'],
+      token: json['token'],
+      createdAt: json['created_at'] != null 
+          ? DateTime.parse(json['created_at']) 
+          : null,
+      isActive: json['is_active'] ?? true,
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -41,21 +55,27 @@ class User {
       'email': email,
       'full_name': fullName,
       'phone_number': phoneNumber,
-      'role': role,
+      'user_type': userType,
+      'address': address,
+      'badge_number': badgeNumber,
+      'token': token,
+      'created_at': createdAt?.toIso8601String(),
       'is_active': isActive,
-      'created_at': createdAt,
     };
   }
-  
+
   User copyWith({
     int? id,
     String? username,
     String? email,
     String? fullName,
     String? phoneNumber,
-    String? role,
+    String? userType,
+    String? address,
+    String? badgeNumber,
+    String? token,
+    DateTime? createdAt,
     bool? isActive,
-    String? createdAt,
   }) {
     return User(
       id: id ?? this.id,
@@ -63,14 +83,17 @@ class User {
       email: email ?? this.email,
       fullName: fullName ?? this.fullName,
       phoneNumber: phoneNumber ?? this.phoneNumber,
-      role: role ?? this.role,
-      isActive: isActive ?? this.isActive,
+      userType: userType ?? this.userType,
+      address: address ?? this.address,
+      badgeNumber: badgeNumber ?? this.badgeNumber,
+      token: token ?? this.token,
       createdAt: createdAt ?? this.createdAt,
+      isActive: isActive ?? this.isActive,
     );
   }
-  
+
   @override
   String toString() {
-    return 'User{id: $id, username: $username, role: $role}';
+    return 'User{id: $id, username: $username, role: $userType}';
   }
 }

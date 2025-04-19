@@ -30,7 +30,7 @@ class PlateResultCard extends StatelessWidget {
             Expanded(
               flex: 2,
               child: ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(4.0)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(4.0)),
                 child: Image.file(
                   File(imagePath!),
                   fit: BoxFit.cover,
@@ -40,7 +40,7 @@ class PlateResultCard extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Padding(
-              padding: EdgeInsets.all(Constants.defaultPadding),
+              padding: const EdgeInsets.all(Constants.defaultPadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -50,47 +50,47 @@ class PlateResultCard extends StatelessWidget {
                         plateText != 'No plate detected' ? Icons.check_circle : Icons.cancel,
                         color: plateText != 'No plate detected' ? Colors.green : Colors.red,
                       ),
-                      SizedBox(width: Constants.smallPadding),
+                      const SizedBox(width: Constants.smallPadding),
                       Expanded(
                         child: Text(
                           plateText,
-                          style: Theme.of(context).textTheme.headline6,
+                          style: Theme.of(context).textTheme.titleLarge,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: Constants.smallPadding / 2),
+                  const SizedBox(height: Constants.smallPadding / 2),
                   Text(
                     'Confidence: ${(confidence * 100).toStringAsFixed(1)}%',
-                    style: Theme.of(context).textTheme.bodyText2,
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   if (vehicle != null) ...[
-                    Divider(),
+                    const Divider(),
                     Text(
                       'Vehicle Details:',
-                      style: Theme.of(context).textTheme.subtitle1?.copyWith(
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: Constants.smallPadding / 2),
-                    _buildVehicleInfo('Type', vehicle!.vehicleType),
-                    if (vehicle!.make != null) _buildVehicleInfo('Make', vehicle!.make!),
-                    if (vehicle!.model != null) _buildVehicleInfo('Model', vehicle!.model!),
-                    if (vehicle!.color != null) _buildVehicleInfo('Color', vehicle!.color!),
+                    const SizedBox(height: Constants.smallPadding / 2),
+                    _buildVehicleInfo('Type', vehicle!.type),
+                    _buildVehicleInfo('Make', vehicle!.make),
+                    _buildVehicleInfo('Model', vehicle!.model),
+                    _buildVehicleInfo('Color', vehicle!.color),
                   ] else if (plateText != 'No plate detected') ...[
-                    Divider(),
+                    const Divider(),
                     Text(
                       'Vehicle not registered in system',
-                      style: Theme.of(context).textTheme.bodyText2,
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
-                  Spacer(),
+                  const Spacer(),
                   ElevatedButton.icon(
-                    icon: Icon(Icons.assignment_late),
-                    label: Text('Create Violation'),
+                    icon: const Icon(Icons.assignment_late),
+                    label: const Text('Create Violation'),
                     style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 36),
+                      minimumSize: const Size(double.infinity, 36),
                     ),
                     onPressed: plateText != 'No plate detected' ? onCreateViolation : null,
                   ),
@@ -113,7 +113,7 @@ class PlateResultCard extends StatelessWidget {
             width: 60,
             child: Text(
               '$label:',
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
             ),

@@ -21,8 +21,8 @@ class MapFloatingButtons extends StatelessWidget {
               Provider.of<TrackingProvider>(context, listen: false)
                   .animateToCurrentLocation();
             },
-            child: const Icon(Icons.my_location),
             tooltip: 'My Location',
+            child: const Icon(Icons.my_location),
           ),
           const SizedBox(height: 8),
           FloatingActionButton(
@@ -32,8 +32,8 @@ class MapFloatingButtons extends StatelessWidget {
               Provider.of<TrackingProvider>(context, listen: false)
                   .fetchAllTrackingData();
             },
-            child: const Icon(Icons.refresh),
             tooltip: 'Refresh Data',
+            child: const Icon(Icons.refresh),
           ),
           const SizedBox(height: 8),
           FloatingActionButton(
@@ -42,8 +42,8 @@ class MapFloatingButtons extends StatelessWidget {
             onPressed: () {
               _showReportIncidentDialog(context);
             },
-            child: const Icon(Icons.add_alert),
             tooltip: 'Report Incident',
+            child: const Icon(Icons.add_alert),
           ),
         ],
       ),
@@ -192,8 +192,8 @@ class MapFloatingButtons extends StatelessWidget {
                     'incident_type': incidentType,
                     'description': description,
                     'location': 'Reported via mobile app',
-                    'latitude': currentLocation.latitude,
-                    'longitude': currentLocation.longitude,
+                    'latitude': currentLocation['latitude'],
+                    'longitude': currentLocation['longitude'],
                     'severity': severity,
                   };
                   

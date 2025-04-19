@@ -143,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Total violations card
                         DashboardCard(
                           title: 'Total Violations',
-                          value: violationProvider.stats?['total_violations']?.toString() ?? '0',
+                          value: violationProvider.stats['total_violations']?.toString() ?? '0',
                           icon: Icons.assignment_late,
                           color: Colors.redAccent,
                           isLoading: violationProvider.isLoading,
@@ -151,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Paid violations card
                         DashboardCard(
                           title: 'Paid Violations',
-                          value: violationProvider.stats?['total_paid']?.toString() ?? '0',
+                          value: violationProvider.stats['total_paid']?.toString() ?? '0',
                           icon: Icons.payments,
                           color: Colors.greenAccent[700]!,
                           isLoading: violationProvider.isLoading,
@@ -159,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Pending violations card
                         DashboardCard(
                           title: 'Pending Violations',
-                          value: violationProvider.stats?['total_pending']?.toString() ?? '0',
+                          value: violationProvider.stats['total_pending']?.toString() ?? '0',
                           icon: Icons.pending_actions,
                           color: Colors.orangeAccent,
                           isLoading: violationProvider.isLoading,
@@ -167,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Total fine amount card
                         DashboardCard(
                           title: 'Total Fine Amount',
-                          value: 'NPR ${violationProvider.stats?['total_amount']?.toStringAsFixed(2) ?? '0.00'}',
+                          value: 'NPR ${violationProvider.stats['total_amount']?.toStringAsFixed(2) ?? '0.00'}',
                           icon: Icons.monetization_on,
                           color: Colors.blueAccent,
                           isLoading: violationProvider.isLoading,
@@ -323,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: CircularProgressIndicator(),
                                 ),
                               )
-                            else if ((violationProvider.stats?['recent'] as List?)?.isEmpty ?? true)
+                            else if ((violationProvider.stats['recent'] as List?)?.isEmpty ?? true)
                               const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 24.0),
                                 child: Center(

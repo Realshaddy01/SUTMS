@@ -1,28 +1,43 @@
+"""
+API views for the SUTMS application.
+"""
 import os
 import stripe
 import logging
 from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.db.models import Q, Count, Sum
-from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model, authenticate, login, logout
+from django.db.models import Q, Count, Sum, TruncMonth
+from django.shortcuts import get_object_or_404, render
 from rest_framework import viewsets, permissions, status, filters
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.authtoken.models import Token
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.utils import timezone
+from datetime import timedelta
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+import json
+import tempfile
+from django.http import JsonResponse
 
-from accounts.models import UserProfile
+from accounts.models import UserProfile, User
 from vehicles.models import Vehicle, VehicleDocument
-from violations.models import Violation, ViolationType, ViolationAppeal
+from violations.models import Violation, ViolationType, ViolationAppeal, Notification
 from payments.models import Payment, PaymentReceipt
 from ocr.models import LicensePlateDetection, TrainingImage
 from ocr.utils import detect_license_plate
+from ocr.services import LicensePlateOCR
+from ocr.license_plate_detector import NepaliLicensePlateProcessor
 
 from .serializers import (
     UserSerializer, UserProfileSerializer, VehicleSerializer, 
     VehicleDocumentSerializer, ViolationTypeSerializer, ViolationSerializer,
     ViolationAppealSerializer, PaymentSerializer, PaymentReceiptSerializer,
-    LicensePlateDetectionSerializer, TrainingImageSerializer
+    LicensePlateDetectionSerializer, TrainingImageSerializer, RegisterSerializer,
+    NotificationSerializer
 )
 from .permissions import (
     IsOwnerOrReadOnly, IsOfficerOrAdmin, IsAdminUser, IsVehicleOwner,
@@ -42,17 +57,17 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
-    search_fields = ['email', 'full_name', 'username']
-    filterset_fields = ['role', 'is_active']
+    search_fields = ['email', 'username', 'first_name', 'last_name']
+    filterset_fields = ['user_type', 'is_active']
     
     def get_queryset(self):
         # Regular users can only see their own profile
         # Officers and admins can see all profiles
         user = self.request.user
-        if user.is_admin:
+        if user.is_admin():
             return User.objects.all()
-        elif user.is_officer:
-            return User.objects.filter(Q(id=user.id) | Q(role='user'))
+        elif user.is_officer():
+            return User.objects.filter(Q(id=user.id) | Q(user_type='vehicle_owner'))
         return User.objects.filter(id=user.id)
     
     def get_permissions(self):
@@ -63,8 +78,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def me(self, request):
         """Get current user's profile"""
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
+        return Response(self.get_serializer(request.user).data)
     
     @action(detail=False, methods=['put', 'patch'])
     def update_profile(self, request):
@@ -103,11 +117,23 @@ class VehicleViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         
-        if user.is_admin:
+        if user.is_admin():
             return Vehicle.objects.all()
-        elif user.is_officer:
+        elif user.is_officer():
             return Vehicle.objects.all()
-        return Vehicle.objects.filter(owner=user)
+        
+        # For vehicle owners, filter by their VehicleOwner object
+        try:
+            vehicle_owner = user.vehicle_owner
+            logger.info(f"Found vehicle owner: {vehicle_owner.id} for user {user.id}")
+            return Vehicle.objects.filter(owner=vehicle_owner)
+        except AttributeError as e:
+            # If user doesn't have a vehicle_owner relationship
+            logger.error(f"No vehicle_owner relationship for user {user.id}: {str(e)}")
+            return Vehicle.objects.none()
+        except Exception as e:
+            logger.error(f"Error retrieving vehicles for user {user.id}: {str(e)}")
+            return Vehicle.objects.none()
     
     def perform_create(self, serializer):
         # Set owner to current user if not specified
@@ -119,7 +145,12 @@ class VehicleViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def my_vehicles(self, request):
         """Get vehicles owned by the current user"""
-        vehicles = Vehicle.objects.filter(owner=request.user)
+        try:
+            vehicle_owner = request.user.vehicle_owner
+            vehicles = Vehicle.objects.filter(owner=vehicle_owner)
+        except AttributeError:
+            vehicles = Vehicle.objects.none()
+            
         page = self.paginate_queryset(vehicles)
         
         if page is not None:
@@ -177,117 +208,119 @@ class ViolationTypeViewSet(viewsets.ModelViewSet):
     """API endpoint for violation types"""
     queryset = ViolationType.objects.all()
     serializer_class = ViolationTypeSerializer
-    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'code', 'description']
     
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsOfficerOrAdmin()]
+        elif self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
+
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing notifications."""
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """Return notifications for the current user."""
+        user = self.request.user
+        try:
+            notifications = Notification.objects.filter(user=user).order_by('-created_at')
+            logger.info(f"Found {notifications.count()} notifications for user {user.id}")
+            return notifications
+        except Exception as e:
+            logger.error(f"Error retrieving notifications for user {user.id}: {str(e)}")
+            return Notification.objects.none()
+
+    @action(detail=True, methods=['post'])
+    def mark_as_read(self, request, pk=None):
+        """Mark a notification as read."""
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response({'status': 'notification marked as read'})
+
+    @action(detail=False, methods=['post'])
+    def mark_all_as_read(self, request):
+        """Mark all notifications as read."""
+        self.get_queryset().update(is_read=True)
+        return Response({'status': 'all notifications marked as read'})
 
 
 class ViolationViewSet(viewsets.ModelViewSet):
     """API endpoint for violations"""
     queryset = Violation.objects.all()
     serializer_class = ViolationSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [filters.SearchFilter, DjangoFilterBackend]
-    search_fields = ['vehicle__license_plate', 'location', 'description']
-    filterset_fields = ['violation_type', 'vehicle', 'status', 'reported_by']
+    permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
         user = self.request.user
-        
-        if user.is_admin:
+        if user.is_admin():
             return Violation.objects.all()
-        elif user.is_officer:
+        elif user.is_officer():
             return Violation.objects.all()
-        return Violation.objects.filter(vehicle__owner=user)
-    
-    def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update']:
-            return [IsOfficerOrAdmin()]
-        elif self.action == 'destroy':
-            return [IsAdminUser()]
-        return [permissions.IsAuthenticated()]
-    
-    def perform_create(self, serializer):
-        serializer.save(reported_by=self.request.user)
-    
-    @action(detail=False, methods=['get'])
-    def my_violations(self, request):
-        """Get violations for vehicles owned by the current user"""
-        violations = Violation.objects.filter(vehicle__owner=request.user)
-        page = self.paginate_queryset(violations)
         
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-            
-        serializer = self.get_serializer(violations, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def reported_by_me(self, request):
-        """Get violations reported by the current officer"""
-        if not request.user.is_officer and not request.user.is_admin:
-            return Response({'error': 'Only officers can access this endpoint'}, 
-                           status=status.HTTP_403_FORBIDDEN)
-                           
-        violations = Violation.objects.filter(reported_by=request.user)
-        page = self.paginate_queryset(violations)
-        
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-            
-        serializer = self.get_serializer(violations, many=True)
-        return Response(serializer.data)
+        # For vehicle owners, filter by their vehicles
+        try:
+            vehicle_owner = user.vehicle_owner
+            return Violation.objects.filter(vehicle__owner=vehicle_owner)
+        except AttributeError:
+            # If user doesn't have a vehicle_owner relationship
+            return Violation.objects.none()
     
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """Get violation statistics"""
-        # Ensure user has appropriate permissions
-        if not request.user.is_officer and not request.user.is_admin:
-            # For regular users, only show their own stats
-            violations = Violation.objects.filter(vehicle__owner=request.user)
-        else:
-            violations = Violation.objects.all()
-            
-        # Get counts by status
-        status_counts = violations.values('status').annotate(count=Count('id'))
+        period = request.query_params.get('period', 'all')
+        user = request.user
         
-        # Get counts by violation type
-        type_counts = violations.values('violation_type__name').annotate(count=Count('id'))
+        # Base queryset
+        queryset = self.get_queryset()
         
-        # Get total fine amounts
-        total_fines = violations.aggregate(total=Sum('fine_amount'))
-        
-        # Get counts by month (last 6 months)
-        from django.utils import timezone
-        from dateutil.relativedelta import relativedelta
-        
+        # Filter by date range
         now = timezone.now()
-        six_months_ago = now - relativedelta(months=6)
+        if period == 'today':
+            queryset = queryset.filter(created_at__date=now.date())
+        elif period == 'week':
+            queryset = queryset.filter(created_at__gte=now - timedelta(days=7))
+        elif period == 'month':
+            queryset = queryset.filter(created_at__gte=now - timedelta(days=30))
+        elif period == 'year':
+            queryset = queryset.filter(created_at__gte=now - timedelta(days=365))
         
-        monthly_counts = []
-        for i in range(6):
-            month_start = six_months_ago + relativedelta(months=i)
-            month_end = month_start + relativedelta(months=1)
-            
-            count = violations.filter(timestamp__gte=month_start, timestamp__lt=month_end).count()
-            monthly_counts.append({
-                'month': month_start.strftime('%B'),
-                'year': month_start.year,
-                'count': count
-            })
-            
+        # Calculate statistics
+        total_count = queryset.count()
+        pending_count = queryset.filter(status='pending').count()
+        resolved_count = queryset.filter(status__in=['paid', 'appeal_approved']).count()
+        total_fines = queryset.aggregate(total=Sum('fine_amount'))['total'] or 0
+        
+        # Get violation types breakdown
+        type_stats = (
+            queryset
+            .values('violation_type__name')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+        )
+        
+        # Get monthly trend
+        monthly_stats = (
+            queryset
+            .annotate(month=TruncMonth('created_at'))
+            .values('month')
+            .annotate(count=Count('id'))
+            .order_by('month')
+        )
+        
         return Response({
-            'status_counts': status_counts,
-            'type_counts': type_counts,
+            'total_violations': total_count,
+            'pending_violations': pending_count,
+            'resolved_violations': resolved_count,
             'total_fines': total_fines,
-            'monthly_counts': monthly_counts
+            'violation_types': type_stats,
+            'monthly_trend': monthly_stats,
         })
 
 
@@ -507,31 +540,527 @@ class LicensePlateDetectionViewSet(viewsets.ModelViewSet):
         
         try:
             # Save the uploaded image temporarily
-            from django.core.files.storage import default_storage
-            from django.core.files.base import ContentFile
+            fd, temp_path = tempfile.mkstemp(suffix='.jpg')
+            os.close(fd)
             
-            path = default_storage.save(f'temp/{image_file.name}', ContentFile(image_file.read()))
-            temp_path = os.path.join(settings.MEDIA_ROOT, path)
+            with open(temp_path, 'wb') as f:
+                for chunk in image_file.chunks():
+                    f.write(chunk)
             
             # Process the image with OCR
-            plate_text, confidence, vehicle = detect_license_plate(
-                temp_path, 
-                user=request.user,
-                save_detection=True,
-                location_data=location_data
-            )
+            ocr = LicensePlateOCR()
+            license_number, confidence = ocr.extract_license_plate(temp_path, request.data.get('internet_available', 'true').lower() == 'true')
             
-            # Get the latest detection
-            detection = LicensePlateDetection.objects.filter(user=request.user).latest('detected_at')
-            serializer = self.get_serializer(detection)
+            if not license_number or confidence < 0.5:
+                return Response({
+                    'success': False,
+                    'message': 'Failed to recognize license plate. Please try again.',
+                    'confidence': confidence
+                }, status=status.HTTP_400_BAD_REQUEST)
             
-            # Clean up the temporary file
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+            # Get vehicle details
+            try:
+                vehicle = Vehicle.objects.get(license_plate=license_number)
+                violations = Violation.objects.filter(vehicle=vehicle).order_by('-timestamp')[:3]
                 
-            return Response(serializer.data)
+                # Check if vehicle is reported as stolen
+                is_stolen = vehicle.status == 'stolen'
+                
+                return Response({
+                    'success': True,
+                    'license_plate': license_number,
+                    'confidence': confidence,
+                    'vehicle': {
+                        'id': vehicle.id,
+                        'make': vehicle.make,
+                        'model': vehicle.model,
+                        'year': vehicle.year,
+                        'color': vehicle.color,
+                        'owner_name': vehicle.owner.get_full_name(),
+                        'tax_clearance': {
+                            'is_cleared': vehicle.tax_clearance_status,
+                            'expiry_date': vehicle.tax_expiry_date,
+                        },
+                        'is_stolen': is_stolen,
+                        'total_violations': violations.count(),
+                    },
+                    'recent_violations': [
+                        {
+                            'id': v.id,
+                            'violation_type': v.violation_type.name,
+                            'location': v.location,
+                            'timestamp': v.timestamp,
+                            'fine_amount': v.fine_amount,
+                            'status': v.status,
+                        } for v in violations
+                    ],
+                })
+                
+            except Vehicle.DoesNotExist:
+                return Response({
+                    'success': True,
+                    'license_plate': license_number,
+                    'message': 'Vehicle not found in database',
+                    'confidence': confidence
+                })
             
         except Exception as e:
             logger.error(f"License plate detection error: {str(e)}")
             return Response({'error': str(e)}, 
                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+
+
+# Authentication views
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_user(request):
+    """Register a new user"""
+    try:
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            
+            # Create token for the user
+            token, _ = Token.objects.get_or_create(user=user)
+            
+            # Return user data and token
+            return Response({
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'username': user.username,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'user_type': user.user_type,
+                    'phone_number': user.phone_number
+                },
+                'token': token.key
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        # Log the error
+        logger = logging.getLogger('django')
+        logger.error(f"Registration error: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        
+        # Return error response
+        return Response(
+            {'error': f'Registration failed: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_user(request):
+    """Login a user and return token"""
+    data = request.data
+    
+    # Get username/email and password
+    email_or_username = data.get('username') or data.get('email')
+    password = data.get('password')
+    
+    if not email_or_username or not password:
+        return Response(
+            {'error': 'Both username/email and password are required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check if user is trying to login with email
+    user = None
+    if '@' in email_or_username:
+        try:
+            user_obj = User.objects.get(email=email_or_username)
+            # Try to authenticate with username
+            user = authenticate(username=user_obj.username, password=password)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'No user found with this email address'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+    else:
+        # Try to authenticate with username directly
+        user = authenticate(username=email_or_username, password=password)
+    
+    if user:
+        # Get or create token
+        token, _ = Token.objects.get_or_create(user=user)
+        
+        # Login user
+        login(request, user)
+        
+        # Return user data and token
+        return Response({
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'username': user.username,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'user_type': user.user_type,
+                'phone_number': user.phone_number
+            },
+            'token': token.key
+        })
+    else:
+        return Response(
+            {'error': 'Invalid credentials'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_user(request):
+    """Logout a user"""
+    try:
+        # Delete the user's token
+        if hasattr(request.user, 'auth_token'):
+            request.user.auth_token.delete()
+        
+        # Logout from session
+        logout(request)
+        return Response({'message': 'Successfully logged out'})
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """Change user password"""
+    user = request.user
+    data = request.data
+    
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    
+    if not current_password or not new_password:
+        return Response(
+            {'error': 'Both current and new password are required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check current password
+    if not user.check_password(current_password):
+        return Response(
+            {'error': 'Current password is incorrect'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Set new password
+    user.set_password(new_password)
+    user.save()
+    
+    return Response({'message': 'Password changed successfully'})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_profile(request):
+    """Get user profile"""
+    user = request.user
+    
+    return Response({
+        'id': user.id,
+        'email': user.email,
+        'username': user.username,
+        'full_name': user.get_full_name(),
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'user_type': user.user_type,
+        'phone_number': user.phone_number,
+        'address': user.address,
+        'badge_number': user.badge_number,
+        'profile_picture': request.build_absolute_uri(user.profile_picture.url) if user.profile_picture else None,
+        'date_joined': user.date_joined
+    })
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    """Update user profile"""
+    user = request.user
+    data = request.data
+    
+    # Update user fields if provided
+    if 'first_name' in data:
+        user.first_name = data['first_name']
+    if 'last_name' in data:
+        user.last_name = data['last_name']
+    if 'phone_number' in data:
+        user.phone_number = data['phone_number']
+    if 'address' in data:
+        user.address = data['address']
+    
+    # Save changes
+    user.save()
+    
+    return Response({
+        'id': user.id,
+        'email': user.email,
+        'username': user.username,
+        'full_name': user.get_full_name(),
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'user_type': user.user_type,
+        'phone_number': user.phone_number,
+        'address': user.address,
+        'badge_number': user.badge_number,
+        'profile_picture': request.build_absolute_uri(user.profile_picture.url) if user.profile_picture else None,
+        'date_joined': user.date_joined
+    })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def report_violation(request):
+    """
+    API endpoint for reporting traffic violations.
+    
+    The endpoint accepts violation details and creates a new violation record.
+    """
+    # Validate required fields
+    required_fields = ['vehicle_id', 'violation_type_id', 'location', 'description']
+    for field in required_fields:
+        if field not in request.data:
+            return Response({'error': f'Missing required field: {field}'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Get vehicle and violation type
+        vehicle = get_object_or_404(Vehicle, id=request.data['vehicle_id'])
+        violation_type = get_object_or_404(ViolationType, id=request.data['violation_type_id'])
+        
+        # Create new violation
+        violation = Violation.objects.create(
+            vehicle=vehicle,
+            violation_type=violation_type,
+            reported_by=request.user,
+            location=request.data['location'],
+            latitude=request.data.get('latitude'),
+            longitude=request.data.get('longitude'),
+            timestamp=timezone.now(),
+            description=request.data['description'],
+            fine_amount=violation_type.base_fine,
+            status=Violation.Status.PENDING
+        )
+        
+        # Handle evidence image if provided
+        if 'evidence_image' in request.FILES:
+            img = request.FILES['evidence_image']
+            violation.evidence_image.save(f'evidence_{violation.id}.jpg', img)
+        
+        # Handle license plate image if provided
+        if 'license_plate_image' in request.FILES:
+            img = request.FILES['license_plate_image']
+            violation.license_plate_image.save(f'plate_{violation.id}.jpg', img)
+        
+        # Create notification for vehicle owner
+        Notification.objects.create(
+            user=vehicle.owner,
+            title=f'New Violation Reported',
+            message=f'Your vehicle ({vehicle.license_plate}) has been reported for a {violation_type.name} violation.',
+            notification_type='violation',
+            related_violation=violation,
+            link=f'/violations/{violation.id}'
+        )
+        
+        return Response({
+            'success': True,
+            'message': 'Violation reported successfully',
+            'violation_id': violation.id
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error reporting violation: {str(e)}'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_violation_types(request):
+    """Get list of violation types for dropdown selection."""
+    try:
+        violation_types = ViolationType.objects.filter(is_active=True)
+        logger.info(f"Found {violation_types.count()} active violation types")
+        return Response({
+            'success': True,
+            'violation_types': [
+                {
+                    'id': vt.id,
+                    'name': vt.name,
+                    'code': vt.code,
+                    'description': vt.description,
+                    'base_fine': vt.fine_amount,
+                    'severity': getattr(vt, 'severity', 'medium')
+                } for vt in violation_types
+            ]
+        })
+    except Exception as e:
+        logger.error(f"Error retrieving violation types: {str(e)}")
+        return Response({
+            'success': False,
+            'message': f'Error retrieving violation types: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_vehicle_violations(request, vehicle_id):
+    """Get violation history for a specific vehicle with date filtering."""
+    try:
+        vehicle = get_object_or_404(Vehicle, id=vehicle_id)
+        
+        # Get query parameters for date filtering
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
+        # Filter violations by date range if provided
+        violations = Violation.objects.filter(vehicle=vehicle).order_by('-timestamp')
+        if start_date:
+            violations = violations.filter(timestamp__gte=start_date)
+        if end_date:
+            violations = violations.filter(timestamp__lte=end_date)
+        
+        return Response({
+            'success': True,
+            'vehicle': {
+                'id': vehicle.id,
+                'license_plate': vehicle.license_plate,
+                'make': vehicle.make,
+                'model': vehicle.model,
+            },
+            'violations': [
+                {
+                    'id': v.id,
+                    'violation_type': v.violation_type.name,
+                    'location': v.location,
+                    'timestamp': v.timestamp,
+                    'fine_amount': v.fine_amount,
+                    'status': v.status,
+                    'description': v.description,
+                    'evidence_image': v.evidence_image.url if v.evidence_image else None,
+                } for v in violations
+            ],
+            'total_count': violations.count()
+        })
+    
+    except Exception as e:
+        return Response({
+            'success': False,
+            'message': f'Error retrieving violations: {str(e)}'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def detect_license_plate(request):
+    """API endpoint for license plate detection"""
+    if 'image' not in request.FILES:
+        return Response({'error': 'No image provided'}, status=400)
+    
+    image = request.FILES['image']
+    
+    # Save the uploaded image temporarily
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp:
+        tmp.write(image.read())
+        tmp_path = tmp.name
+    
+    try:
+        # Process the image
+        processor = NepaliLicensePlateProcessor()
+        results, annotated_image_path = processor.process_image(tmp_path)
+        
+        if not results:
+            return Response({'error': 'No license plate detected'}, status=400)
+        
+        # Return the best result (highest confidence)
+        best_result = max(results, key=lambda x: x['confidence'])
+        
+        # Get vehicle information if available
+        from vehicles.models import Vehicle
+        try:
+            vehicle = Vehicle.objects.get(license_plate=best_result['text'])
+            vehicle_info = {
+                'id': vehicle.id,
+                'license_plate': vehicle.license_plate,
+                'make': vehicle.make,
+                'model': vehicle.model,
+                'owner_name': vehicle.owner_name,
+                'year': vehicle.year,
+                'color': vehicle.color,
+                'registration_status': vehicle.is_registration_valid
+            }
+        except Vehicle.DoesNotExist:
+            vehicle_info = None
+        
+        response = {
+            'license_plate': best_result['text'],
+            'confidence': float(best_result['confidence']),
+            'vehicle_info': vehicle_info
+        }
+        
+        return Response(response)
+        
+    except Exception as e:
+        return Response({'error': str(e)}, status=500)
+    finally:
+        # Clean up temporary files
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        
+        if 'annotated_image_path' in locals() and os.path.exists(annotated_image_path):
+            os.unlink(annotated_image_path)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def lookup_vehicle_by_plate(request):
+    try:
+        license_plate = request.data.get('license_plate')
+        if not license_plate:
+            return JsonResponse({'error': 'License plate is required'}, status=400)
+            
+        try:
+            vehicle = Vehicle.objects.get(license_plate__iexact=license_plate)
+            
+            # Get vehicle owner details
+            owner_details = {
+                'name': vehicle.owner.name,
+                'email': vehicle.owner.email,
+                'phone': vehicle.owner.phone
+            }
+            
+            # Get recent violations
+            recent_violations = []
+            for violation in Violation.objects.filter(vehicle=vehicle).order_by('-created_at')[:5]:
+                recent_violations.append({
+                    'id': violation.id,
+                    'type': violation.violation_type.name,
+                    'date': violation.created_at.isoformat(),
+                    'location': violation.location,
+                    'fine_amount': float(violation.fine_amount),
+                    'status': violation.status
+                })
+                
+            return JsonResponse({
+                'id': vehicle.id,
+                'license_plate': vehicle.license_plate,
+                'owner': owner_details,
+                'make': vehicle.make,
+                'model': vehicle.model,
+                'year': vehicle.year,
+                'color': vehicle.color,
+                'registration_number': vehicle.registration_number,
+                'registration_expiry': vehicle.registration_expiry.isoformat() if vehicle.registration_expiry else None,
+                'is_insured': vehicle.is_insured,
+                'insurance_provider': vehicle.insurance_provider,
+                'insurance_expiry': vehicle.insurance_expiry.isoformat() if vehicle.insurance_expiry else None,
+                'violations_count': Violation.objects.filter(vehicle=vehicle).count(),
+                'recent_violations': recent_violations
+            })
+            
+        except Vehicle.DoesNotExist:
+            return JsonResponse({'error': 'Vehicle not found'}, status=404)
+            
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

@@ -4,13 +4,14 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../models/vehicle.dart';
-import '../models/violation.dart';
+import '../models/violation_type.dart';
 import '../providers/auth_provider.dart';
+import '../providers/vehicle_provider.dart';
 import '../providers/violation_provider.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
-import '../widgets/loading_indicator.dart';
 import '../utils/validators.dart';
+import '../widgets/loading_overlay.dart';
 
 class CameraScreen extends StatefulWidget {
   const CameraScreen({Key? key}) : super(key: key);
@@ -25,7 +26,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   bool _isCameraInitialized = false;
   bool _isRearCameraSelected = true;
   bool _isFlashOn = false;
-  bool _isRecording = false;
+  final bool _isRecording = false;
   File? _capturedImage;
   double _minZoomLevel = 1.0;
   double _maxZoomLevel = 1.0;
@@ -140,8 +141,11 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      if (violationProvider.violationTypes.isEmpty) {
-        await violationProvider.fetchViolationTypes(authProvider.user!.token);
+      if (authProvider.user?.token != null) {
+        // Fetch violation types if we don't have them yet
+        if (violationProvider.violationTypes.isEmpty) {
+          await violationProvider.fetchViolationTypesWithToken(authProvider.user!.token!);
+        }
       }
     } catch (e) {
       setState(() {
@@ -173,8 +177,11 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
         final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         
-        if (violationProvider.violationTypes.isEmpty) {
-          await violationProvider.fetchViolationTypes(authProvider.user!.token);
+        if (authProvider.user?.token != null) {
+          // Fetch violation types if we don't have them yet
+          if (violationProvider.violationTypes.isEmpty) {
+            await violationProvider.fetchViolationTypesWithToken(authProvider.user!.token!);
+          }
         }
       }
     } catch (e) {
@@ -207,6 +214,10 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final violationProvider = Provider.of<ViolationProvider>(context, listen: false);
       
+      if (authProvider.user?.token == null || authProvider.user?.id == null) {
+        throw Exception("Authentication token or user ID not found");
+      }
+      
       // Find vehicle ID by license plate if no vehicle is selected
       int vehicleId;
       if (_selectedVehicle != null) {
@@ -214,7 +225,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       } else {
         // Search for vehicle by license plate
         final searchResult = await Provider.of<VehicleProvider>(context, listen: false)
-            .searchVehiclesByLicensePlate(authProvider.user!.token, _licensePlateController.text);
+            .searchVehiclesByLicensePlate(authProvider.user!.token!, _licensePlateController.text);
         
         if (searchResult == null || searchResult.isEmpty) {
           setState(() {
@@ -228,12 +239,12 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
       }
       
       final success = await violationProvider.recordViolation(
-        authProvider.user!.token,
+        authProvider.user!.token!,
         vehicleId: vehicleId,
         violationTypeId: _selectedViolationTypeId!,
         location: _locationController.text,
         description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
-        evidenceImage: _capturedImage,
+        evidenceImage: _capturedImage!,
         recordedById: authProvider.user!.id,
       );
       
@@ -273,6 +284,26 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
     });
   }
 
+  void _toggleFlash() {
+    if (_cameraController != null && _cameraController!.value.isInitialized) {
+      setState(() {
+        _isFlashOn = !_isFlashOn;
+      });
+      _cameraController!.setFlashMode(
+        _isFlashOn ? FlashMode.torch : FlashMode.off,
+      );
+    }
+  }
+
+  void _switchCamera() {
+    if (_cameras != null && _cameras!.isNotEmpty) {
+      setState(() {
+        _isRearCameraSelected = !_isRearCameraSelected;
+      });
+      _initializeCamera();
+    }
+  }
+
   @override
   void dispose() {
     _cameraController?.dispose();
@@ -287,59 +318,29 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Record Violation'),
+        title: const Text('Capture Violation'),
         actions: [
           if (!_showForm)
             IconButton(
               icon: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off),
-              onPressed: () async {
-                if (_cameraController != null && _cameraController!.value.isInitialized) {
-                  setState(() {
-                    _isFlashOn = !_isFlashOn;
-                  });
-                  await _cameraController!.setFlashMode(
-                    _isFlashOn ? FlashMode.torch : FlashMode.off,
-                  );
-                }
-              },
+              onPressed: _toggleFlash,
             ),
           if (!_showForm)
             IconButton(
-              icon: const Icon(Icons.flip_camera_ios),
-              onPressed: () {
-                setState(() {
-                  _isRearCameraSelected = !_isRearCameraSelected;
-                });
-                _initializeCamera();
-              },
+              icon: Icon(_isRearCameraSelected ? Icons.camera_front : Icons.camera_rear),
+              onPressed: _switchCamera,
             ),
         ],
       ),
-      body: _isProcessing
-          ? const LoadingIndicator(message: 'Processing...')
-          : _error != null && !_isCameraInitialized && _capturedImage == null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
-                      const SizedBox(height: 16),
-                      Text(
-                        _error!,
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: _initializeCamera,
-                        child: const Text('Try Again'),
-                      ),
-                    ],
-                  ),
-                )
-              : _showForm
-                  ? _buildViolationForm()
-                  : _buildCameraView(),
+      body: LoadingOverlay(
+        isLoading: _isProcessing,
+        loadingText: 'Processing...',
+        child: _error != null
+            ? _buildErrorView()
+            : _showForm
+                ? _buildViolationForm()
+                : _buildCameraView(),
+      ),
     );
   }
 
@@ -509,10 +510,9 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
             CustomTextField(
               controller: _licensePlateController,
               labelText: 'License Plate',
+              readOnly: _selectedVehicle != null,
               prefixIcon: Icons.directions_car,
-              enabled: _selectedVehicle == null,
-              validator: Validators.validateRequired,
-              helperText: _selectedVehicle != null ? 'Vehicle pre-selected from QR scan' : null,
+              validator: Validators.validateLicensePlateAdapter,
             ),
             const SizedBox(height: 16),
             
@@ -562,7 +562,7 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
               controller: _locationController,
               labelText: 'Location',
               prefixIcon: Icons.location_on,
-              validator: Validators.validateRequired,
+              validator: Validators.validateRequiredAdapter,
             ),
             const SizedBox(height: 16),
             
@@ -599,16 +599,38 @@ class _CameraScreenState extends State<CameraScreen> with WidgetsBindingObserver
                       onPressed: () {
                         Navigator.of(context).pop();
                       },
-                      child: const Text('Cancel'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
+                      child: const Text('Cancel'),
                     ),
                   ),
                 ],
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red.shade300),
+          const SizedBox(height: 16),
+          Text(
+            _error!,
+            style: const TextStyle(color: Colors.red),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _initializeCamera,
+            child: const Text('Try Again'),
+          ),
+        ],
       ),
     );
   }

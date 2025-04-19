@@ -1,21 +1,28 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Smart Urban Traffic Management System{% endblock %}</title>
+    <!-- Clear browser cache with version parameter -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <!-- Custom styles -->
     <style>
         :root {
+            --sidebar-width: 250px;
+            --navbar-height: 60px;
             --primary-color: #4e73df;
-            --secondary-color: #858796;
+            --secondary-color: #3a5cd0;
             --success-color: #1cc88a;
             --info-color: #36b9cc;
             --warning-color: #f6c23e;
@@ -30,76 +37,21 @@
         }
         
         /* Sidebar */
-        .sidebar {
-            width: 250px;
-            min-height: 100vh;
-            background-color: #4e73df;
-            background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
-            background-size: cover;
+        #sidebar {
+            width: var(--sidebar-width);
             position: fixed;
+            top: var(--navbar-height);
+            left: 0;
+            height: calc(100vh - var(--navbar-height));
+            background: #fff;
+            border-right: 1px solid #e3e6f0;
             z-index: 1000;
-            transition: all 0.2s;
+            transition: all 0.3s;
+            display: block !important;
         }
         
-        .sidebar .sidebar-brand {
-            height: 70px;
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .sidebar .sidebar-brand .sidebar-brand-icon {
-            margin-right: 0.5rem;
-        }
-        
-        .sidebar .nav-item {
-            position: relative;
-        }
-        
-        .sidebar .nav-item .nav-link {
-            padding: 0.75rem 1rem;
-            color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            align-items: center;
-        }
-        
-        .sidebar .nav-item .nav-link i {
-            margin-right: 0.75rem;
-            font-size: 1rem;
-            width: 1.25rem;
-            text-align: center;
-        }
-        
-        .sidebar .nav-item .nav-link:hover {
-            color: white;
-        }
-        
-        .sidebar .nav-item .nav-link.active {
-            color: white;
-            font-weight: 700;
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-        
-        .sidebar .nav-item .nav-link[data-toggle="collapse"].collapsed::after {
-            content: '\f105';
-            font-family: 'Font Awesome 5 Free';
-            font-weight: 900;
-            margin-left: auto;
-        }
-        
-        .sidebar .nav-item .nav-link[data-toggle="collapse"]::after {
-            content: '\f107';
-            font-family: 'Font Awesome 5 Free';
-            font-weight: 900;
-            margin-left: auto;
-        }
-        
-        .sidebar-divider {
-            border-top: 1px solid rgba(255, 255, 255, 0.15);
-            margin: 1rem 0;
+        .sidebar-content {
+            padding: 1.5rem;
         }
         
         .sidebar-heading {
@@ -111,12 +63,55 @@
             font-weight: 700;
         }
         
+        .sidebar-divider {
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            margin: 1rem 0;
+        }
+        
+        .sidebar-toggle {
+            padding: 0.25rem 0.75rem;
+            font-size: 1.25rem;
+            background: transparent;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+        }
+        
+        .sidebar-toggle:hover {
+            color: var(--secondary-color);
+        }
+        
         /* Navbar */
-        .topbar {
-            height: 70px;
-            background-color: white;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            z-index: 999;
+        .navbar {
+            height: var(--navbar-height);
+            background-color: #fff !important;
+            box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15) !important;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1001;
+            padding: 0 1rem;
+        }
+        
+        .navbar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0 15px;
+        }
+        
+        .navbar-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-grow: 1;
+        }
+        
+        .search-form {
+            max-width: 400px;
+            width: 100%;
+            margin: 0 auto;
         }
         
         .navbar-brand img {
@@ -172,22 +167,28 @@
         }
         
         /* Main content */
-        .content {
-            flex: 1;
-            margin-left: 250px;
-            padding: 2rem 1.5rem;
-            min-height: 100vh;
-            transition: all 0.2s;
+        #wrapper {
+            display: flex;
+            width: 100%;
+            padding-top: var(--navbar-height);
+        }
+        
+        #content {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
+            min-height: calc(100vh - var(--navbar-height));
+            transition: all 0.3s;
+            padding: 1.5rem;
         }
         
         /* Toggled sidebar */
-        .sidebar-toggled .sidebar {
-            width: 0;
-            overflow: hidden;
+        #sidebar.active {
+            margin-left: 0;
         }
         
-        .sidebar-toggled .content {
-            margin-left: 0;
+        #content.active {
+            margin-left: var(--sidebar-width);
+            width: calc(100% - var(--sidebar-width));
         }
         
         /* Cards */
@@ -204,18 +205,22 @@
         
         /* Responsive */
         @media (max-width: 768px) {
-            .sidebar {
-                width: 0;
-                overflow: hidden;
+            #sidebar {
+                margin-left: calc(-1 * var(--sidebar-width));
             }
             
-            .content {
+            #sidebar.active {
                 margin-left: 0;
             }
             
-            .sidebar-toggled .sidebar {
-                width: 250px;
-                overflow: visible;
+            #content {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            #content.active {
+                margin-left: var(--sidebar-width);
+                width: calc(100% - var(--sidebar-width));
             }
         }
         
@@ -294,357 +299,116 @@
     <!-- Page Wrapper -->
     <div id="wrapper">
         <!-- Sidebar -->
-        <ul class="navbar-nav sidebar accordion" id="accordionSidebar">
-            <!-- Sidebar - Brand -->
-            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{% url 'dashboard:index' %}">
-                <div class="sidebar-brand-icon">
-                    <i class="fas fa-traffic-light"></i>
+        <div id="sidebar">
+            <div class="sidebar-content">
+                <div class="sidebar-heading p-3">
+                    <h5 class="mb-0 text-primary">Smart Traffic Manager</h5>
                 </div>
-                <div class="sidebar-brand-text mx-3">SUTMS</div>
-            </a>
-            
-            <!-- Divider -->
-            <hr class="sidebar-divider my-0">
-            
-            <!-- Nav Item - Dashboard -->
-            <li class="nav-item {% if request.path == '/dashboard/' %}active{% endif %}">
-                <a class="nav-link" href="{% url 'dashboard:index' %}">
-                    <i class="fas fa-fw fa-tachometer-alt"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            
-            <!-- Divider -->
-            <hr class="sidebar-divider">
-            
-            {% if request.user.is_vehicle_owner %}
-                <!-- Vehicle Owner Section -->
-                <div class="sidebar-heading">
-                    Vehicle Management
-                </div>
-                
-                <li class="nav-item {% if 'vehicles' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="{% url 'vehicles:list' %}">
-                        <i class="fas fa-fw fa-car"></i>
-                        <span>My Vehicles</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item {% if 'violations/my' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-exclamation-triangle"></i>
-                        <span>My Violations</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item {% if 'payments' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-money-bill-wave"></i>
-                        <span>Payments</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item {% if 'appeals' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-gavel"></i>
-                        <span>Appeals</span>
-                    </a>
-                </li>
-            {% endif %}
-            
-            {% if request.user.is_officer %}
-                <!-- Officer Section -->
-                <div class="sidebar-heading">
-                    Traffic Management
-                </div>
-                
-                <li class="nav-item {% if 'vehicles/scan-qr' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="{% url 'vehicles:scan_qr' %}">
-                        <i class="fas fa-fw fa-qrcode"></i>
-                        <span>Scan Vehicle QR</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item {% if 'violations/report' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-file-alt"></i>
-                        <span>Report Violation</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item {% if 'violations/pending' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-exclamation-circle"></i>
-                        <span>Pending Violations</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item {% if 'appeals/review' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-balance-scale"></i>
-                        <span>Review Appeals</span>
-                    </a>
-                </li>
-            {% endif %}
-            
-            {% if request.user.is_admin %}
-                <!-- Admin Section -->
-                <div class="sidebar-heading">
-                    Administration
-                </div>
-                
-                <li class="nav-item {% if 'admin/users' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-users"></i>
-                        <span>User Management</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item {% if 'admin/vehicles' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-car"></i>
-                        <span>All Vehicles</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item {% if 'admin/violations' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-exclamation-triangle"></i>
-                        <span>Violation Management</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item {% if 'admin/reports' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-chart-bar"></i>
-                        <span>Reports & Analytics</span>
-                    </a>
-                </li>
-                
-                <li class="nav-item {% if 'admin/settings' in request.path %}active{% endif %}">
-                    <a class="nav-link" href="#">
-                        <i class="fas fa-fw fa-cog"></i>
-                        <span>System Settings</span>
-                    </a>
-                </li>
-            {% endif %}
-            
-            <!-- Divider -->
-            <hr class="sidebar-divider">
-            
-            <!-- Common Section -->
-            <div class="sidebar-heading">
-                Personal
-            </div>
-            
-            <li class="nav-item {% if 'profile' in request.path %}active{% endif %}">
-                <a class="nav-link" href="#">
-                    <i class="fas fa-fw fa-user"></i>
-                    <span>My Profile</span>
-                </a>
-            </li>
-            
-            <li class="nav-item {% if 'notifications' in request.path %}active{% endif %}">
-                <a class="nav-link" href="#">
-                    <i class="fas fa-fw fa-bell"></i>
-                    <span>Notifications</span>
-                </a>
-            </li>
+                <hr class="sidebar-divider my-0">
 
-            <!-- Route Planner Section -->
-            <div class="sidebar-heading">
-                Navigation
+                <!-- Nav Items -->
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center py-3 text-dark" href="{% url 'admin:index' %}">
+                            <i class="fas fa-fw fa-tachometer-alt me-2"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    {% if request.user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center py-3 text-dark" href="{% url 'vehicles:list' %}">
+                            <i class="fas fa-fw fa-car me-2"></i>
+                            <span>My Vehicles</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center py-3 text-dark" href="{% url 'admin:index' %}">
+                            <i class="fas fa-fw fa-user-shield me-2"></i>
+                            <span>Admin Panel</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center py-3 text-dark" href="/api/docs/">
+                            <i class="fas fa-fw fa-book me-2"></i>
+                            <span>API Documentation</span>
+                        </a>
+                    </li>
+                </ul>
             </div>
-            
-            <li class="nav-item {% if 'routes' in request.path and not 'traffic_jams' in request.path %}active{% endif %}">
-                <a class="nav-link" href="{% url 'route_planner:index' %}">
-                    <i class="fas fa-fw fa-route"></i>
-                    <span>Route Planner</span>
-                </a>
-            </li>
-            
-            <li class="nav-item {% if 'routes/traffic_jams' in request.path %}active{% endif %}">
-                <a class="nav-link" href="{% url 'route_planner:traffic_jams' %}">
-                    <i class="fas fa-fw fa-map-marked-alt"></i>
-                    <span>Traffic Jams</span>
-                </a>
-            </li>
-            
-            <!-- Divider -->
-            <hr class="sidebar-divider d-none d-md-block">
-            
-            <!-- Sidebar Toggler (Sidebar) -->
-            <div class="text-center d-none d-md-inline mt-3">
-                <button class="rounded-circle border-0" id="sidebarToggle">
-                    <i class="fas fa-angle-left"></i>
-                </button>
-            </div>
-        </ul>
+        </div>
         <!-- End of Sidebar -->
         <!-- Content Wrapper -->
-        <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
             <!-- Main Content -->
             <div id="content">
                 <!-- Topbar -->
                 <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                    <!-- Sidebar Toggle (Topbar) -->
-                    <button id="sidebarToggleTop" class="btn btn-link d-md-none">
-                        <i class="fa fa-bars"></i>
-                    </button>
-                    
-                    <!-- Topbar Search -->
-                    <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
-                        <div class="input-group">
-                            <input type="text" class="form-control small" placeholder="Search for..." aria-label="Search" aria-describedby="basic-addon2">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="button">
-                                    <i class="fas fa-search fa-sm"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                    
-                    <!-- Topbar Navbar -->
-                    <ul class="navbar-nav ml-auto">
-                        <!-- Nav Item - Search Dropdown (Visible Only XS) -->
-                        <li class="nav-item dropdown no-arrow d-sm-none">
-                            <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fas fa-search fa-fw"></i>
-                            </a>
-                            <!-- Dropdown - Messages -->
-                            <div class="dropdown-menu dropdown-menu-right p-3 shadow animated--grow-in" aria-labelledby="searchDropdown">
-                                <form class="form-inline mr-auto w-100 navbar-search">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control small" placeholder="Search for..." aria-label="Search" aria-describedby="basic-addon2">
-                                        <div class="input-group-append">
-                                            <button class="btn btn-primary" type="button">
-                                                <i class="fas fa-search fa-sm"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </li>
-                        
-                        <!-- Nav Item - Notifications -->
-                        <li class="nav-item dropdown no-arrow mx-1">
-                            <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fas fa-bell fa-fw"></i>
-                                <!-- Counter - Alerts -->
-                                <span class="badge rounded-pill bg-danger">3+</span>
-                            </a>
-                            <!-- Dropdown - Alerts -->
-                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in dropdown-notifications" aria-labelledby="alertsDropdown">
-                                <h6 class="dropdown-header bg-primary">
-                                    Notifications
-                                </h6>
-                                
-                                <!-- Example notifications - would be dynamically generated -->
-                                <a class="dropdown-item d-flex align-items-center notification-item unread violation" href="#">
-                                    <div class="me-3">
-                                        <div class="icon-circle bg-danger">
-                                            <i class="fas fa-exclamation-triangle text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">April 1, 2023</div>
-                                        <span>New violation: Speeding on Durbar Marg. Fine: NPR 1500</span>
-                                    </div>
-                                </a>
-                                
-                                <a class="dropdown-item d-flex align-items-center notification-item payment" href="#">
-                                    <div class="me-3">
-                                        <div class="icon-circle bg-success">
-                                            <i class="fas fa-money-bill text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">March 28, 2023</div>
-                                        <span>Payment received: NPR 1000 for parking violation</span>
-                                    </div>
-                                </a>
-                                
-                                <a class="dropdown-item d-flex align-items-center notification-item unread appeal" href="#">
-                                    <div class="me-3">
-                                        <div class="icon-circle bg-warning">
-                                            <i class="fas fa-gavel text-white"></i>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div class="small text-gray-500">March 25, 2023</div>
-                                        <span>Your appeal for red light violation has been approved!</span>
-                                    </div>
-                                </a>
-                                
-                                <a class="dropdown-item text-center small text-gray-500" href="#">Show All Notifications</a>
-                            </div>
-                        </li>
-                        
-                        <div class="topbar-divider d-none d-sm-block"></div>
-                        
-                        <!-- Nav Item - User Information -->
-                        <li class="nav-item dropdown no-arrow">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">{{ request.user.get_full_name|default:request.user.username }}</span>
-                                {% if request.user.profile_picture %}
-                                    <img class="img-profile rounded-circle" src="{{ request.user.profile_picture.url }}" width="32" height="32">
-                                {% else %}
-                                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                                        <span class="text-white fw-bold">{{ request.user.get_full_name|default:request.user.username|first|upper }}</span>
-                                    </div>
-                                {% endif %}
-                            </a>
-                            <!-- Dropdown - User Information -->
-                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
-                                <div class="dropdown-item d-flex align-items-center">
-                                    <div class="mr-3">
-                                        {% if request.user.profile_picture %}
-                                            <img class="img-profile rounded-circle" src="{{ request.user.profile_picture.url }}" width="60" height="60">
-                                        {% else %}
-                                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
-                                                <span class="text-white fw-bold">{{ request.user.get_full_name|default:request.user.username|first|upper }}</span>
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="ms-3">
-                                        <div class="fw-bold">{{ request.user.get_full_name|default:request.user.username }}</div>
-                                        <div class="small text-gray-500">{{ request.user.get_user_type_display }}</div>
-                                        <div class="small text-gray-500">{{ request.user.email }}</div>
-                                    </div>
+                    <div class="container-fluid">
+                        <!-- Sidebar Toggle (Topbar) -->
+                        <button id="sidebarToggle" class="btn btn-link">
+                            <i class="fas fa-bars"></i>
+                        </button>
+
+                        <!-- Topbar Search -->
+                        <div class="navbar-center">
+                            <form class="search-form d-flex">
+                                <div class="input-group">
+                                    <input type="text" class="form-control bg-light border-0 small" placeholder="Search for...">
+                                    <button class="btn btn-primary" type="button">
+                                        <i class="fas fa-search fa-sm"></i>
+                                    </button>
                                 </div>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="#">
-                                    <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Profile
+                            </form>
+                        </div>
+
+                        <!-- Topbar Navbar -->
+                        <ul class="navbar-nav">
+                            <!-- Nav Item - Notifications -->
+                            <li class="nav-item dropdown no-arrow mx-1">
+                                <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-bell fa-fw"></i>
+                                    <span class="badge rounded-pill bg-danger">3+</span>
                                 </a>
-                                <a class="dropdown-item" href="#">
-                                    <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Settings
+                                <!-- Dropdown - Alerts -->
+                                <div class="dropdown-list dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="alertsDropdown">
+                                    <h6 class="dropdown-header bg-primary">Notifications</h6>
+                                    <!-- Notification items -->
+                                </div>
+                            </li>
+
+                            <!-- Nav Item - User Information -->
+                            <li class="nav-item dropdown no-arrow">
+                                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-user fa-fw"></i>
                                 </a>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">
-                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                                    Logout
-                                </a>
-                            </div>
-                        </li>
-                    </ul>
+                                <!-- Dropdown - User Information -->
+                                <div class="dropdown-menu dropdown-menu-end shadow animated--grow-in" aria-labelledby="userDropdown">
+                                    <a class="dropdown-item" href="#">Profile</a>
+                                    <a class="dropdown-item" href="#">Settings</a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">Logout</a>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
                 </nav>
                 <!-- End of Topbar -->
-                
+
                 <!-- Begin Page Content -->
                 <div class="container-fluid">
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
+                    <!-- Server Status Message - Single Instance -->
+                    {% if not hide_server_status %}
+                    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>Django server is running successfully!</strong>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                     {% endif %}
-                    
-                    {% block content %}
-                    {% endblock %}
+
+                    {% block content %}{% endblock %}
                 </div>
                 <!-- /.container-fluid -->
             </div>
@@ -689,39 +453,23 @@
     </div>
     
     <!-- Bootstrap core JavaScript-->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <!-- Custom scripts -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Sidebar toggle
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
             const sidebarToggle = document.getElementById('sidebarToggle');
-            const sidebarToggleTop = document.getElementById('sidebarToggleTop');
-            const wrapper = document.getElementById('wrapper');
             
-            function toggleSidebar() {
-                if (wrapper.classList.contains('sidebar-toggled')) {
-                    wrapper.classList.remove('sidebar-toggled');
-                    localStorage.setItem('sidebarToggled', 'false');
-                } else {
-                    wrapper.classList.add('sidebar-toggled');
-                    localStorage.setItem('sidebarToggled', 'true');
-                }
-            }
+            // Show sidebar by default
+            sidebar.classList.add('active');
+            content.classList.add('active');
             
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', toggleSidebar);
-            }
-            
-            if (sidebarToggleTop) {
-                sidebarToggleTop.addEventListener('click', toggleSidebar);
-            }
-            
-            // Check for stored sidebar state
-            const sidebarState = localStorage.getItem('sidebarToggled');
-            if (sidebarState === 'true') {
-                wrapper.classList.add('sidebar-toggled');
-            }
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('active');
+                content.classList.toggle('active');
+            });
             
             // Bootstrap initialization for tooltips and popovers
             const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');

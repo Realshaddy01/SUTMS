@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../services/storage_service.dart';
+import '../utils/constants.dart';
 
 class ApiClient {
   final String baseUrl;
@@ -19,7 +20,7 @@ class ApiClient {
     if (requireAuth) {
       final token = await _storageService.getAuthToken();
       if (token != null) {
-        headers['Authorization'] = 'Token $token';
+        headers['Authorization'] = '${Constants.tokenPrefix} $token';
       }
     }
     
@@ -120,7 +121,7 @@ class ApiClient {
     
     // Add auth header if needed
     if (requireAuth && token != null) {
-      request.headers['Authorization'] = 'Token $token';
+      request.headers['Authorization'] = '${Constants.tokenPrefix} $token';
     }
     
     // Add file
@@ -139,5 +140,108 @@ class ApiClient {
     final response = await http.Response.fromStream(streamedResponse);
     
     return _handleResponse(response);
+  }
+  
+  // Get with custom token
+  Future<http.Response> getWithToken(String endpoint, String token, {Map<String, dynamic>? queryParameters}) async {
+    final uri = Uri.parse('$baseUrl$endpoint')
+        .replace(queryParameters: queryParameters);
+    
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': '${Constants.tokenPrefix} $token',
+    };
+    
+    return await http.get(uri, headers: headers);
+  }
+  
+  // Post with custom token
+  Future<http.Response> postWithToken(String endpoint, dynamic data, String token) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': '${Constants.tokenPrefix} $token',
+    };
+    
+    return await http.post(
+      uri,
+      headers: headers,
+      body: jsonEncode(data),
+    );
+  }
+  
+  // Patch with custom token
+  Future<http.Response> patchWithToken(String endpoint, dynamic data, String token) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': '${Constants.tokenPrefix} $token',
+    };
+    
+    return await http.patch(
+      uri,
+      headers: headers,
+      body: jsonEncode(data),
+    );
+  }
+  
+  // Put with custom token
+  Future<http.Response> putWithToken(String endpoint, dynamic data, String token) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    
+    final headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'Authorization': '${Constants.tokenPrefix} $token',
+    };
+    
+    return await http.put(
+      uri,
+      headers: headers,
+      body: jsonEncode(data),
+    );
+  }
+  
+  // Delete with custom token
+  Future<http.Response> deleteWithToken(String endpoint, String token) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    
+    final headers = {
+      'Accept': 'application/json',
+      'Authorization': '${Constants.tokenPrefix} $token',
+    };
+    
+    return await http.delete(uri, headers: headers);
+  }
+  
+  // Upload file with custom token
+  Future<http.Response> uploadFileWithToken(String endpoint, String filePath, String token, {Map<String, dynamic>? fields}) async {
+    final uri = Uri.parse('$baseUrl$endpoint');
+    
+    final request = http.MultipartRequest('POST', uri);
+    
+    // Add authorization header
+    request.headers['Authorization'] = '${Constants.tokenPrefix} $token';
+    
+    // Add file
+    request.files.add(await http.MultipartFile.fromPath('file', filePath));
+    
+    // Add other fields
+    if (fields != null) {
+      fields.forEach((key, value) {
+        request.fields[key] = value.toString();
+      });
+    }
+    
+    // Send the request
+    final streamedResponse = await request.send();
+    
+    // Convert to Response
+    return await http.Response.fromStream(streamedResponse);
   }
 }

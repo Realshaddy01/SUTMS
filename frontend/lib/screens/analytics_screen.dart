@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:sutms_flutter/providers/analytics_provider.dart';
-import 'package:sutms_flutter/utils/constants.dart';
-import 'package:sutms_flutter/widgets/charts/violation_charts.dart';
+import '../providers/analytics_provider.dart';
+import '../utils/constants.dart';
+import '../widgets/charts/violation_charts.dart';
+import '../models/analytics_data.dart';
 
 class AnalyticsScreen extends StatefulWidget {
   const AnalyticsScreen({Key? key}) : super(key: key);
 
   @override
-  _AnalyticsScreenState createState() => _AnalyticsScreenState();
+  State<AnalyticsScreen> createState() => _AnalyticsScreenState();
 }
 
 class _AnalyticsScreenState extends State<AnalyticsScreen> {
@@ -17,7 +18,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     super.initState();
     // Load analytics data when screen is first opened
     Future.microtask(() {
-      context.read<AnalyticsProvider>().fetchAnalyticsData();
+      Provider.of<AnalyticsProvider>(context, listen: false).fetchAnalyticsData();
     });
   }
 
@@ -30,7 +31,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              context.read<AnalyticsProvider>().refresh();
+              Provider.of<AnalyticsProvider>(context, listen: false).refresh();
             },
           ),
         ],
@@ -95,28 +96,24 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                           scrollDirection: Axis.horizontal,
                           child: ToggleButtons(
                             isSelected: [
-                              analyticsProvider.selectedPeriod == AppConstants.periodWeek,
-                              analyticsProvider.selectedPeriod == AppConstants.periodMonth,
-                              analyticsProvider.selectedPeriod == AppConstants.periodQuarter,
-                              analyticsProvider.selectedPeriod == AppConstants.periodYear,
+                              analyticsProvider.selectedPeriod == Constants.periodWeek,
+                              analyticsProvider.selectedPeriod == Constants.periodMonth,
+                              analyticsProvider.selectedPeriod == Constants.periodYear,
                             ],
                             onPressed: (index) {
                               String period;
                               switch (index) {
                                 case 0:
-                                  period = AppConstants.periodWeek;
+                                  period = Constants.periodWeek;
                                   break;
                                 case 1:
-                                  period = AppConstants.periodMonth;
+                                  period = Constants.periodMonth;
                                   break;
                                 case 2:
-                                  period = AppConstants.periodQuarter;
-                                  break;
-                                case 3:
-                                  period = AppConstants.periodYear;
+                                  period = Constants.periodYear;
                                   break;
                                 default:
-                                  period = AppConstants.periodMonth;
+                                  period = Constants.periodMonth;
                               }
                               analyticsProvider.setPeriod(period);
                             },
@@ -129,10 +126,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 16),
                                 child: Text('Monthly'),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: Text('Quarterly'),
                               ),
                               Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 16),
@@ -174,16 +167,38 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                                 Colors.orange,
                               ),
                             ),
-                            if (analyticsData.paymentStatus.containsKey('paid'))
-                              Expanded(
-                                child: _buildSummaryItem(
-                                  context,
-                                  'Paid',
-                                  '${analyticsData.paymentStatus['paid']!.toStringAsFixed(1)}%',
-                                  Icons.payments,
-                                  Colors.green,
-                                ),
+                            Expanded(
+                              child: _buildSummaryItem(
+                                context,
+                                'Total Revenue',
+                                '₹${analyticsData.totalRevenue.toStringAsFixed(2)}',
+                                Icons.payments,
+                                Colors.green,
                               ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildSummaryItem(
+                                context,
+                                'Pending',
+                                analyticsData.pendingViolations.toString(),
+                                Icons.pending_actions,
+                                Colors.orange,
+                              ),
+                            ),
+                            Expanded(
+                              child: _buildSummaryItem(
+                                context,
+                                'Resolved',
+                                analyticsData.resolvedViolations.toString(),
+                                Icons.check_circle,
+                                Colors.green,
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -193,41 +208,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                 
                 const SizedBox(height: 16),
                 
-                // Payment status chart
-                if (analyticsData.paymentStatus.isNotEmpty)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: PaymentStatusPieChart(
-                        paymentStatus: analyticsData.paymentStatus,
-                      ),
-                    ),
-                  ),
-                
-                const SizedBox(height: 16),
-                
                 // Violation types chart
                 if (analyticsData.violationTypes.isNotEmpty)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: ViolationTypeBarChart(
-                        violationTypes: analyticsData.violationTypes,
-                      ),
+                      child: _buildViolationTypeChart(analyticsData.violationTypes),
                     ),
                   ),
                 
                 const SizedBox(height: 16),
                 
                 // Monthly trend chart
-                if (analyticsData.monthlyCounts.isNotEmpty)
+                if (analyticsData.monthlyViolations.isNotEmpty)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: MonthlyTrendLineChart(
-                        monthlyCounts: analyticsData.monthlyCounts,
-                        period: analyticsData.period,
-                      ),
+                      child: _buildMonthlyTrendChart(analyticsData.monthlyViolations),
                     ),
                   ),
                 
@@ -238,72 +235,9 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
-                      child: RevenueTrendChart(
-                        revenueTrend: analyticsData.revenueTrend,
-                        period: analyticsData.period,
-                      ),
+                      child: _buildRevenueTrendChart(analyticsData.revenueTrend),
                     ),
                   ),
-                
-                const SizedBox(height: 16),
-                
-                // Top locations list
-                if (analyticsData.topLocations.isNotEmpty)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Top Violation Locations',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ...analyticsData.topLocations.map((location) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.location_on, color: Colors.red),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      location.location,
-                                      style: const TextStyle(fontWeight: FontWeight.w500),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      location.count.toString(),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ],
-                      ),
-                    ),
-                  ),
-                  
-                const SizedBox(height: 32),
               ],
             ),
           );
@@ -312,21 +246,19 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
     );
   }
   
-  Widget _buildSummaryItem(
-    BuildContext context,
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildSummaryItem(BuildContext context, String title, String value, IconData icon, Color color) {
     return Column(
       children: [
-        Icon(icon, size: 40, color: color),
+        Icon(
+          icon,
+          size: 36,
+          color: color,
+        ),
         const SizedBox(height: 8),
         Text(
           value,
           style: const TextStyle(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -335,10 +267,23 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
           title,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey.shade700,
+            color: Colors.grey[600],
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
+  }
+  
+  Widget _buildViolationTypeChart(List<ViolationType> violationTypes) {
+    return ViolationTypeChart(violationTypes: violationTypes);
+  }
+  
+  Widget _buildMonthlyTrendChart(List<MonthlyCount> monthlyCounts) {
+    return MonthlyTrendChart(monthlyCounts: monthlyCounts);
+  }
+  
+  Widget _buildRevenueTrendChart(List<RevenueTrend> revenueTrend) {
+    return RevenueTrendChart(revenueTrend: revenueTrend);
   }
 }

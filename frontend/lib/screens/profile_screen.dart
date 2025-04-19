@@ -57,11 +57,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
       try {
-        final updatedUser = await authProvider.updateProfile({
-          'full_name': _fullNameController.text.trim(),
-          'phone_number': _phoneController.text.trim(),
-          'address': _addressController.text.trim(),
-        });
+        await authProvider.updateProfile(
+          fullName: _fullNameController.text.trim(),
+          phoneNumber: _phoneController.text.trim(),
+          address: _addressController.text.trim(),
+        );
         
         setState(() {
           _isEditing = false;
@@ -143,8 +143,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               try {
                 final authProvider = Provider.of<AuthProvider>(context, listen: false);
                 final success = await authProvider.changePassword(
-                  oldPasswordController.text,
-                  newPasswordController.text,
+                  currentPassword: oldPasswordController.text,
+                  newPassword: newPasswordController.text,
                 );
                 
                 Navigator.of(context).pop();
@@ -222,8 +222,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     radius: 50,
                     backgroundColor: Theme.of(context).primaryColor.withOpacity(0.2),
                     child: Text(
-                      user.fullName.isNotEmpty
-                          ? user.fullName.substring(0, 1).toUpperCase()
+                      user.fullName != null && user.fullName!.isNotEmpty
+                          ? user.fullName!.substring(0, 1).toUpperCase()
                           : 'U',
                       style: TextStyle(
                         fontSize: 36,
@@ -235,7 +235,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 16),
                   if (!_isEditing) ...[
                     Text(
-                      user.fullName,
+                      user.fullName ?? 'User',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
@@ -249,7 +249,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
-                        _getUserTypeDisplay(user.userType),
+                        _getUserTypeDisplay(user.userType ?? 'user'),
                         style: TextStyle(
                           color: Theme.of(context).primaryColor,
                           fontWeight: FontWeight.bold,
@@ -402,10 +402,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _buildProfileCard([
                     _buildProfileItem(
                       'Account Type',
-                      _getUserTypeDisplay(user.userType),
+                      _getUserTypeDisplay(user.userType ?? 'user'),
                       Icons.badge,
                     ),
-                    if (user.isOfficer && user.badgeNumber != null)
+                    if (user.isOfficer == true && user.badgeNumber != null)
                       _buildProfileItem(
                         'Badge Number',
                         user.badgeNumber!,
@@ -418,9 +418,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     _buildProfileItem(
                       'Account Status',
-                      user.isActive ? 'Active' : 'Inactive',
+                      user.isActive == true ? 'Active' : 'Inactive',
                       Icons.check_circle,
-                      valueColor: user.isActive ? Colors.green : Colors.red,
+                      valueColor: user.isActive == true ? Colors.green : Colors.red,
                     ),
                   ]),
                   const SizedBox(height: 24),
@@ -567,12 +567,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
   
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return '${date.day}/${date.month}/${date.year}';
-    } catch (e) {
-      return dateStr;
+  String _formatDate(DateTime? dateTime) {
+    if (dateTime == null) {
+      return 'Unknown';
     }
+    
+    return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
   }
 }

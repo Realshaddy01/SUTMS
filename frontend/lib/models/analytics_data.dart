@@ -1,129 +1,88 @@
 class AnalyticsData {
-  final String period;
-  final int totalViolations;
-  final Map<String, double> paymentStatus;
   final List<ViolationType> violationTypes;
-  final List<MonthlyCount> monthlyCounts;
-  final List<Location> topLocations;
+  final List<MonthlyCount> monthlyViolations;
   final List<RevenueTrend> revenueTrend;
+  final int totalViolations;
+  final double totalRevenue;
+  final int pendingViolations;
+  final int resolvedViolations;
 
   AnalyticsData({
-    required this.period,
-    required this.totalViolations,
-    required this.paymentStatus,
     required this.violationTypes,
-    required this.monthlyCounts,
-    required this.topLocations, 
+    required this.monthlyViolations,
     required this.revenueTrend,
+    required this.totalViolations,
+    required this.totalRevenue,
+    required this.pendingViolations,
+    required this.resolvedViolations,
   });
 
   factory AnalyticsData.fromJson(Map<String, dynamic> json) {
-    // Handle payment status
-    Map<String, double> paymentStatusMap = {};
-    if (json['payment_status'] != null) {
-      json['payment_status'].forEach((key, value) {
-        paymentStatusMap[key] = value.toDouble();
-      });
-    }
-    
-    // Handle violation types
-    List<ViolationType> violationTypesList = [];
-    if (json['violation_types'] != null) {
-      json['violation_types'].forEach((item) {
-        violationTypesList.add(ViolationType.fromJson(item));
-      });
-    }
-    
-    // Handle monthly counts
-    List<MonthlyCount> monthlyCountsList = [];
-    if (json['monthly_counts'] != null) {
-      json['monthly_counts'].forEach((item) {
-        monthlyCountsList.add(MonthlyCount.fromJson(item));
-      });
-    }
-    
-    // Handle top locations
-    List<Location> locationsList = [];
-    if (json['top_locations'] != null) {
-      json['top_locations'].forEach((item) {
-        locationsList.add(Location.fromJson(item));
-      });
-    }
-    
-    // Handle revenue trend
-    List<RevenueTrend> revenueTrendList = [];
-    if (json['revenue_trend'] != null) {
-      json['revenue_trend'].forEach((item) {
-        revenueTrendList.add(RevenueTrend.fromJson(item));
-      });
-    }
-    
     return AnalyticsData(
-      period: json['period'] ?? '',
-      totalViolations: json['total_violations'] ?? 0,
-      paymentStatus: paymentStatusMap,
-      violationTypes: violationTypesList,
-      monthlyCounts: monthlyCountsList,
-      topLocations: locationsList,
-      revenueTrend: revenueTrendList,
+      violationTypes: (json['violation_types'] as List)
+          .map((type) => ViolationType.fromJson(type))
+          .toList(),
+      monthlyViolations: (json['monthly_violations'] as List)
+          .map((month) => MonthlyCount.fromJson(month))
+          .toList(),
+      revenueTrend: (json['revenue_trend'] as List)
+          .map((trend) => RevenueTrend.fromJson(trend))
+          .toList(),
+      totalViolations: json['total_violations'],
+      totalRevenue: json['total_revenue'].toDouble(),
+      pendingViolations: json['pending_violations'],
+      resolvedViolations: json['resolved_violations'],
     );
   }
 }
 
 class ViolationType {
-  final String type;
+  final String name;
   final int count;
-  
-  ViolationType({required this.type, required this.count});
-  
+
+  ViolationType({
+    required this.name,
+    required this.count,
+  });
+
   factory ViolationType.fromJson(Map<String, dynamic> json) {
     return ViolationType(
-      type: json['type'] ?? '',
-      count: json['count'] ?? 0,
+      name: json['name'],
+      count: json['count'],
     );
   }
 }
 
 class MonthlyCount {
-  final String month; // YYYY-MM or YYYY-MM-DD
+  final String month;
   final int count;
-  
-  MonthlyCount({required this.month, required this.count});
-  
+
+  MonthlyCount({
+    required this.month,
+    required this.count,
+  });
+
   factory MonthlyCount.fromJson(Map<String, dynamic> json) {
     return MonthlyCount(
-      month: json['month'] ?? '',
-      count: json['count'] ?? 0,
-    );
-  }
-}
-
-class Location {
-  final String location;
-  final int count;
-  
-  Location({required this.location, required this.count});
-  
-  factory Location.fromJson(Map<String, dynamic> json) {
-    return Location(
-      location: json['location'] ?? '',
-      count: json['count'] ?? 0,
+      month: json['month'],
+      count: json['count'],
     );
   }
 }
 
 class RevenueTrend {
-  final String? month; // YYYY-MM
-  final String? date;  // YYYY-MM-DD
+  final String date;
   final double amount;
-  
-  RevenueTrend({this.month, this.date, required this.amount});
-  
+
+  RevenueTrend({
+    required this.date,
+    required this.amount,
+  });
+
   factory RevenueTrend.fromJson(Map<String, dynamic> json) {
     return RevenueTrend(
-      month: json['month'],
       date: json['date'],
-      amount: (json['amount'] ?? 0).toDouble(),
+      amount: json['amount'].toDouble(),
     );
   }
 }

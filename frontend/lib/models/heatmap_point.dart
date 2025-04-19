@@ -24,4 +24,13 @@ class HeatmapPoint {
       'weight': intensity,
     };
   }
+
+  // Conversion to LatLng for Google Maps
+  dynamic toLatLng() {
+    return {
+      'lat': latitude,
+      'lng': longitude,
+      'weight': intensity
+    };
+  }
 }

@@ -36,7 +36,7 @@ class RecentViolationsList extends StatelessWidget {
               ),
             ),
             title: Text(
-              violation.licensePlate,
+              violation.licensePlate ?? 'Unknown',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:sutms_flutter/models/analytics_data.dart';
-import 'package:sutms_flutter/services/api_service.dart';
+import '../models/analytics_data.dart';
+import '../services/api_service.dart';
 
 class AnalyticsProvider with ChangeNotifier {
   final ApiService _apiService;

@@ -1,46 +1,42 @@
-import 'dart:convert';
-
 class ViolationType {
   final int id;
   final String name;
+  final String code;
   final String description;
-  final double defaultFine;
-  final bool isActive;
-  final String? createdAt;
-  
+  final double baseFine;
+  final String severity;
+
   ViolationType({
     required this.id,
     required this.name,
+    required this.code,
     required this.description,
-    required this.defaultFine,
-    required this.isActive,
-    this.createdAt,
+    required this.baseFine,
+    required this.severity,
   });
-  
+
+  // Getter for formatted fine
+  String get formattedFine => 'Npr ${baseFine.toStringAsFixed(2)}';
+
   factory ViolationType.fromJson(Map<String, dynamic> json) {
     return ViolationType(
       id: json['id'],
       name: json['name'],
+      code: json['code'],
       description: json['description'],
-      defaultFine: json['default_fine'].toDouble(),
-      isActive: json['is_active'],
-      createdAt: json['created_at'],
+      baseFine: double.parse(json['base_fine'].toString()),
+      severity: json['severity'],
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
+      'code': code,
       'description': description,
-      'default_fine': defaultFine,
-      'is_active': isActive,
-      'created_at': createdAt,
+      'base_fine': baseFine,
+      'severity': severity,
     };
-  }
-  
-  @override
-  String toString() {
-    return 'ViolationType{id: $id, name: $name, defaultFine: $defaultFine}';
   }
 }

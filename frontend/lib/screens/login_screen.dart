@@ -41,23 +41,41 @@ class _LoginScreenState extends State<LoginScreen> {
       // Get auth provider
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
-      // Attempt login
-      final success = await authProvider.login(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
-      
-      if (success && mounted) {
-        // Navigate to home screen
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else if (mounted) {
-        // Show error message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(authProvider.error ?? 'Login failed'),
-            backgroundColor: Colors.red,
-          ),
+      try {
+        // Clear any previous errors
+        authProvider.clearError();
+        
+        // Check if input is email or username
+        final input = _emailController.text.trim();
+        bool isEmail = input.contains('@');
+        
+        // Attempt login
+        final success = await authProvider.login(
+          input,
+          _passwordController.text,
         );
+        
+        if (success && mounted) {
+          // Navigate to home screen
+          Navigator.of(context).pushReplacementNamed('/home');
+        } else if (mounted && authProvider.error != null) {
+          // Show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(authProvider.error!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Login error: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -119,18 +137,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 40),
                   
-                  // Email field
+                  // Email/Username field
                   CustomTextField(
                     controller: _emailController,
-                    hintText: 'Email',
-                    prefixIcon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
+                    hintText: 'Email or Username',
+                    prefixIcon: Icons.person_outline,
+                    keyboardType: TextInputType.text,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                        return 'Please enter a valid email';
+                        return 'Please enter your email or username';
                       }
                       return null;
                     },

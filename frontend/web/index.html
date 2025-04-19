@@ -22,6 +22,7 @@
 
   <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="frontend">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
@@ -31,8 +32,37 @@
 
   <title>frontend</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Ensure proper MIME types -->
+  <script>
+    // The following loading mechanism improves MIME type handling
+    window.flutterWebRenderer = "html";
+  </script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- Flutter initialization script -->
+  <script>
+    // Define serviceWorkerVersion - needed for Flutter web
+    var serviceWorkerVersion = null;
+    
+    window.addEventListener('load', function(ev) {
+      // Load the Flutter web SDK
+      _flutter = _flutter || {};
+      _flutter.loader = _flutter.loader || {};
+      
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
+  <script src="flutter.js" defer></script>
 </body>
 </html>

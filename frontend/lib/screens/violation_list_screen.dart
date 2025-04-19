@@ -145,7 +145,7 @@ class _ViolationListScreenState extends State<ViolationListScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        violation.licensePlate,
+                        violation.licensePlate ?? 'Unknown',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -160,7 +160,7 @@ class _ViolationListScreenState extends State<ViolationListScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      violation.statusDisplay ?? violation.status.toUpperCase(),
+                      violation.status.toUpperCase(),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
@@ -200,7 +200,7 @@ class _ViolationListScreenState extends State<ViolationListScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          violation.location,
+                          violation.location ?? 'Unknown location',
                           style: TextStyle(
                             color: Colors.grey[600],
                           ),
@@ -245,51 +245,56 @@ class _ViolationListScreenState extends State<ViolationListScreen> {
                   const SizedBox(height: 16),
                   // Action buttons
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (violation.isPayable)
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).pushNamed(
-                                '/payment',
-                                arguments: {'violationId': violation.id},
-                              );
-                            },
-                            icon: const Icon(Icons.payment),
-                            label: const Text('Pay Now'),
+                      Expanded(
+                        child: SizedBox(
+                          height: 36,
+                          child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                            onPressed: () => _viewViolationDetails(violation),
+                            child: const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.visibility, size: 16),
+                                  SizedBox(width: 4),
+                                  Text('View Details'),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                      if (violation.isPayable && violation.isAppealable)
-                        const SizedBox(width: 8),
-                      if (violation.isAppealable)
+                      ),
+                      const SizedBox(width: 8),
+                      if (violation.isPayable) ...[
                         Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).pushNamed(
-                                '/appeal',
-                                arguments: {'violationId': violation.id},
-                              );
-                            },
-                            icon: const Icon(Icons.gavel),
-                            label: const Text('Appeal'),
+                          child: SizedBox(
+                            height: 36,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                              onPressed: () => _payViolation(violation),
+                              child: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.payment, size: 16),
+                                    SizedBox(width: 4),
+                                    Text('Pay Fine'),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      if (!violation.isPayable && !violation.isAppealable)
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.of(context).pushNamed(
-                                '/violation-detail',
-                                arguments: {'violationId': violation.id},
-                              );
-                            },
-                            icon: const Icon(Icons.visibility),
-                            label: const Text('View Details'),
-                          ),
-                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -348,5 +353,19 @@ class _ViolationListScreenState extends State<ViolationListScreen> {
       default:
         return Colors.grey;
     }
+  }
+
+  void _viewViolationDetails(Violation violation) {
+    Navigator.of(context).pushNamed(
+      '/violation-detail',
+      arguments: {'violationId': violation.id},
+    );
+  }
+  
+  void _payViolation(Violation violation) {
+    Navigator.of(context).pushNamed(
+      '/payment',
+      arguments: {'violationId': violation.id},
+    );
   }
 }

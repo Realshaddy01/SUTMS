@@ -157,14 +157,21 @@ class ThemeProvider with ChangeNotifier {
     final themeModeString = prefs.getString('themeMode');
     
     if (themeModeString != null) {
-      if (themeModeString == ThemeMode.light.toString()) {
+      if (themeModeString == 'ThemeMode.light') {
         _themeMode = ThemeMode.light;
-      } else if (themeModeString == ThemeMode.dark.toString()) {
+      } else if (themeModeString == 'ThemeMode.dark') {
         _themeMode = ThemeMode.dark;
-      } else {
+      } else if (themeModeString == 'ThemeMode.system') {
         _themeMode = ThemeMode.system;
       }
       notifyListeners();
+    } else {
+      // Check if dark mode is enabled in app config
+      final isDarkModeEnabled = prefs.getBool('isDarkModeEnabled');
+      if (isDarkModeEnabled != null) {
+        _themeMode = isDarkModeEnabled ? ThemeMode.dark : ThemeMode.light;
+        notifyListeners();
+      }
     }
   }
 }

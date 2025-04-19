@@ -1,46 +1,100 @@
-name: sutms_web_demo
-description: Smart Urban Traffic Management System - Web Demo
+name: smart_traffic_manager
+description: Smart Urban Traffic Management System
 
-publish_to: 'none'
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.17.0 <3.0.0"
+  sdk: '>=3.0.0 <4.0.0'
 
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`.
+# To see which dependencies have newer versions available, run `flutter pub outdated`.
 dependencies:
   flutter:
     sdk: flutter
-  
-  # UI components
-  cupertino_icons: ^1.0.5
-  fl_chart: ^0.62.0
-  flutter_spinkit: ^5.2.0
-  
-  # State management
+
+  # The following adds the Cupertino Icons font to your application.
+  cupertino_icons: ^1.0.2
   provider: ^6.0.5
-  
-  # Networking
   http: ^1.1.0
-  
-  # Maps
-  google_maps_flutter: ^2.3.0
-  google_maps_flutter_web: ^0.5.1
-  
-  # Storage
+  flutter_secure_storage: ^8.0.0
+  intl: ^0.17.0
   shared_preferences: ^2.2.0
   
-  # Others
-  url_launcher: ^6.1.12
+  # Camera and image related
+  camera: ^0.10.5+2
+  image_picker: ^0.8.7+5
+  path_provider: ^2.0.15
+  image: ^4.0.17
+  
+  # Location services
+  geolocator: ^9.0.2
+  geocoding: ^2.1.0
+  
+  # Network and connectivity
+  connectivity_plus: ^4.0.1
+  
+  # UI components
+  flutter_svg: ^2.0.5
+  cached_network_image: ^3.2.3
+  shimmer: ^3.0.0
+  lottie: ^2.3.2
+  google_maps_flutter: ^2.2.8
+  
+  # Added dependencies to fix linter errors
+  # location: ^5.0.3  # Temporarily disabled due to Kotlin incompatibility
+  firebase_messaging: ^14.7.10
+  flutter_local_notifications: ^16.3.0
+  fl_chart: ^0.64.0
+  flutter_spinkit: ^5.2.0
+  permission_handler: ^11.2.0
+  url_launcher: ^6.2.4
+  qr_code_scanner: ^1.0.1  # Re-enabled QR scanner
+  qr_flutter: ^4.1.0  # Add QR code generator
+  share_plus: ^10.0.0  # For sharing QR codes
+  cross_file: ^0.3.3+4  # For XFile support
+  charts_flutter: ^0.12.0
+  sqflite: ^2.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.2
-
-flutter:
-  uses-material-design: true
+  flutter_lints: ^2.0.0
   
-  # Assets only, no fonts
+flutter:
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
     - assets/icons/
+    - assets/animations/
+    - assets/ml_models/
+    - assets/ml_models/README.md
+  
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic

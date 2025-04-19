@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ LANGUAGE_CODE|default:'en' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,14 +11,76 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <!-- Custom CSS -->
     <style>
         :root {
-            --primary-color: #3498db;
-            --secondary-color: #2c3e50;
-            --accent-color: #e74c3c;
-            --light-color: #ecf0f1;
-            --dark-color: #2c3e50;
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4cc9f0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --danger-color: #f44336;
+            --info-color: #2196f3;
+            --border-radius: 0.5rem;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+        
+        /* Dark mode styles */
+        [data-theme="dark"] {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #4cc9f0;
+            --light-color: #343a40;
+            --dark-color: #f8f9fa;
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --card-bg: #1e1e1e;
+            --border-color: #2d2d2d;
+        }
+
+        [data-theme="dark"] body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .navbar {
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .card {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .dropdown-menu {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .dropdown-item {
+            color: var(--text-color);
+        }
+
+        [data-theme="dark"] .dropdown-item:hover {
+            background-color: var(--secondary-color);
+        }
+
+        [data-theme="dark"] .sidebar {
+            background-color: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .sidebar .nav-link {
+            color: var(--text-color);
         }
         
         body {
@@ -27,133 +89,323 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        /* Navbar Styles */
+        .navbar {
+            background-color: #fff;
+            box-shadow: var(--box-shadow);
+            padding: 0.75rem 1rem;
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            z-index: 1030;
+            height: 60px;
+        }
+        
+        .navbar .container-fluid {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        /* Center the search form */
+        .navbar form.d-flex {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
         }
         
         .navbar-brand {
-            font-weight: bold;
+            font-weight: 700;
             color: var(--primary-color) !important;
+            display: flex;
+            align-items: center;
+            font-size: 1.25rem;
         }
         
-        .navbar {
-            background-color: #fff;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        .navbar-brand i {
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
         }
         
-        .navbar-dark {
-            background-color: var(--dark-color);
+        .navbar .nav-link {
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            color: #495057;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
         }
         
+        .navbar .nav-link:hover {
+            color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+        
+        .navbar .nav-link.active {
+            color: var(--primary-color);
+            background-color: rgba(67, 97, 238, 0.15);
+        }
+        
+        .navbar .nav-link i {
+            margin-right: 0.5rem;
+        }
+        
+        /* Sidebar Styles */
+        .wrapper {
+            display: flex;
+            width: 100%;
+            align-items: stretch;
+            min-height: 100vh;
+            padding-top: 60px;
+        }
+        
+        .sidebar {
+            width: 250px;
+            position: fixed;
+            top: 60px;
+            left: 0;
+            height: calc(100% - 60px);
+            z-index: 999;
+            background: #fff;
+            color: #333;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 3px 0 10px rgba(0, 0, 0, 0.05);
+            overflow-y: auto;
+            transform: translateX(0);
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-250px);
+        }
+        
+        .sidebar .sidebar-header {
+            padding: 1rem;
+            background: rgba(67, 97, 238, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .sidebar ul.components {
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .sidebar ul p {
+            color: #fff;
+            padding: 10px;
+        }
+        
+        .sidebar ul li a {
+            padding: 0.8rem 1.5rem;
+            font-size: 0.95rem;
+            display: block;
+            color: #333;
+            text-decoration: none;
+            transition: var(--transition);
+            position: relative;
+            font-weight: 500;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar.collapsed ul li a {
+            padding: 1rem 0.8rem;
+            text-align: center;
+        }
+        
+        .sidebar.collapsed ul li a i {
+            font-size: 1.25rem;
+            margin-right: 0;
+        }
+        
+        .sidebar.collapsed ul li a span {
+            display: none;
+        }
+        
+        .sidebar ul li a:hover {
+            color: var(--primary-color);
+            background: rgba(67, 97, 238, 0.1);
+        }
+        
+        .sidebar ul li a.active {
+            color: var(--primary-color);
+            background: rgba(67, 97, 238, 0.15);
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        .sidebar ul li a i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .sidebar ul.collapse {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .sidebar ul.collapse li a {
+            padding-left: 3.5rem;
+        }
+        
+        /* Sidebar Toggle Button */
+        .sidebar-toggle {
+            position: fixed;
+            left: 15px;
+            top: 10px;
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1031;
+        }
+        
+        .sidebar-toggle:hover {
+            background: var(--secondary-color);
+            transform: scale(1.1);
+        }
+        
+        /* Main Content */
+        #content {
+            width: calc(100% - 250px);
+            min-height: 100vh;
+            transition: all 0.3s ease-in-out;
+            position: relative;
+            margin-left: 250px;
+            padding-top: 60px;
+        }
+        
+        #content.expanded {
+            width: 100%;
+            margin-left: 0;
+        }
+        
+        .content-section {
+            padding: 1.5rem;
+        }
+        
+        /* Card Styles */
         .card {
             border: none;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            transition: transform 0.3s, box-shadow 0.3s;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+            margin-bottom: 1.5rem;
         }
         
         .card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
         }
         
+        .card-header {
+            background-color: transparent;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+        }
+        
+        .card-header-tabs {
+            margin-right: -0.625rem;
+            margin-bottom: -1rem;
+            margin-left: -0.625rem;
+            border-bottom: 0;
+        }
+        
+        /* Custom styling for buttons and elements */
         .btn-primary, .bg-primary {
             background-color: var(--primary-color) !important;
             border-color: var(--primary-color) !important;
         }
         
         .btn-primary:hover {
-            background-color: #2980b9 !important;
-            border-color: #2980b9 !important;
+            background-color: var(--secondary-color) !important;
+            border-color: var(--secondary-color) !important;
         }
         
         .text-primary {
             color: var(--primary-color) !important;
         }
         
-        .footer {
-            background-color: var(--dark-color);
-            color: #fff;
-            padding: 2rem 0;
-            margin-top: auto;
+        /* Notifications */
+        .dropdown-notifications {
+            min-width: 300px;
+            padding: 0;
         }
         
-        /* For features and dashboard stats */
-        .feature-icon {
-            width: 4rem;
-            height: 4rem;
-            border-radius: 0.75rem;
+        .notification-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+        
+        .notification-item:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .notification-item.unread {
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+        
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: var(--light-color);
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-            font-size: 1.5rem;
+            margin-right: 1rem;
         }
         
-        .stat-card {
-            text-align: center;
-            padding: 1.5rem;
-        }
-        
-        .stat-card .number {
-            font-size: 2.5rem;
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-        
-        .stat-card .label {
-            font-size: 1rem;
-            color: #6c757d;
-        }
-        
-        /* Custom styles for sidebar */
-        .sidebar {
-            position: fixed;
-            top: 56px;
-            bottom: 0;
-            left: 0;
-            z-index: 100;
-            padding: 0;
-            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
-            background-color: #fff;
-        }
-        
-        .sidebar .nav-link {
-            font-weight: 500;
-            color: #333;
-            padding: 0.75rem 1.5rem;
-            border-left: 3px solid transparent;
-        }
-        
-        .sidebar .nav-link.active {
-            color: var(--primary-color);
-            border-left: 3px solid var(--primary-color);
-            background-color: rgba(52, 152, 219, 0.1);
-        }
-        
-        .sidebar .nav-link:hover {
-            background-color: rgba(0, 0, 0, 0.05);
-        }
-        
-        .sidebar .nav-link i {
-            margin-right: 0.5rem;
-        }
-        
-        /* Main content with sidebar */
-        .main-content {
-            margin-left: 250px;
-            padding: 2rem;
-        }
-        
-        /* Responsive sidebar */
-        @media (max-width: 768px) {
+        /* Responsive Design */
+        @media (max-width: 992px) {
             .sidebar {
-                position: static;
-                height: auto;
+                width: 250px;
+                opacity: 1;
             }
             
-            .main-content {
+            .sidebar.collapsed {
+                width: 0;
+                opacity: 0;
+            }
+            
+            #content {
+                width: 100%;
                 margin-left: 0;
+            }
+            
+            #content.expanded {
+                width: 100%;
+                margin-left: 0;
+            }
+            
+            .overlay {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                z-index: 998;
+                display: none;
+                transition: all 0.5s ease-in-out;
+            }
+            
+            .overlay.active {
+                display: block;
             }
         }
     </style>
@@ -161,134 +413,314 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-traffic-light me-2"></i>
-                SUTMS
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
-                            <i class="fas fa-home"></i> Home
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <h5 class="mb-0">Dashboard</h5>
+            </div>
+
+            <ul class="list-unstyled components">
+                <li>
+                    <a href="/" class="{% if request.path == '/' %}active{% endif %}">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/dashboard/" class="{% if '/dashboard/' in request.path %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if '/dashboard/' in request.path %}active{% endif %}" href="/dashboard/">
-                            <i class="fas fa-tachometer-alt"></i> Dashboard
+                <li>
+                    <a href="#vehicleSubmenu" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle {% if '/vehicles/' in request.path %}active{% endif %}">
+                        <i class="fas fa-car"></i>
+                        <span>Vehicles</span>
+                    </a>
+                    <ul class="collapse list-unstyled" id="vehicleSubmenu">
+                        <li>
+                            <a href="/vehicles/">All Vehicles</a>
+                        </li>
+                        <li>
+                            <a href="/vehicles/add/">Add Vehicle</a>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="/violations/" class="{% if '/violations/' in request.path %}active{% endif %}">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Violations</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if '/vehicles/' in request.path %}active{% endif %}" href="/vehicles/">
-                            <i class="fas fa-car"></i> Vehicles
+                <li>
+                    <a href="/cameras/" class="{% if '/cameras/' in request.path %}active{% endif %}">
+                        <i class="fas fa-video"></i>
+                        <span>Cameras</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if '/cameras/' in request.path %}active{% endif %}" href="/cameras/">
-                            <i class="fas fa-video"></i> Cameras
+                <li>
+                    <a href="/route-planner/" class="{% if '/route-planner/' in request.path %}active{% endif %}">
+                        <i class="fas fa-route"></i>
+                        <span>Route Planner</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if '/routes/' in request.path %}active{% endif %}" href="/routes/">
-                            <i class="fas fa-route"></i> Routes
+                <li>
+                    <a href="/ocr/" class="{% if '/ocr/' in request.path %}active{% endif %}">
+                        <i class="fas fa-camera"></i>
+                        <span>License Detection</span>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if '/ocr/' in request.path %}active{% endif %}" href="/ocr/">
-                            <i class="fas fa-camera"></i> OCR
+                <li>
+                    <a href="/admin/" target="_blank">
+                        <i class="fas fa-user-shield"></i>
+                        <span>Admin Panel</span>
                         </a>
                     </li>
                 </ul>
-                
-                <ul class="navbar-nav">
-                    {% if user.is_authenticated %}
+        </nav>
+
+        <!-- Page Content -->
+        <div id="content">
+            <!-- Top Navbar -->
+            <nav class="navbar navbar-expand-lg navbar-light">
+                <div class="container-fluid">
+                    <button type="button" id="sidebarCollapse" class="sidebar-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    
+                    <a class="navbar-brand d-flex align-items-center" href="/">
+                        <i class="fas fa-traffic-light"></i>
+                        <span class="ms-2">SUTMS</span>
+                    </a>
+                    
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" 
+                            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <!-- Centered search bar -->
+                        <form class="d-flex mx-auto" style="max-width: 400px;">
+                            <div class="input-group">
+                                <input class="form-control" type="search" placeholder="Search..." aria-label="Search">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <ul class="navbar-nav ms-auto">
+                            <!-- Language Selector -->
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                                <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle"></i> 
-                            {% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="/accounts/profile/"><i class="fas fa-id-card me-2"></i>Profile</a></li>
-                            {% if user.is_staff %}
-                            <li><a class="dropdown-item" href="/admin/"><i class="fas fa-cogs me-2"></i>Admin</a></li>
-                            {% endif %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/accounts/logout/"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                    <i class="fas fa-globe"></i>
+                                    {% if LANGUAGE_CODE == 'ne' %}
+                                        नेपाली
+                                    {% else %}
+                                        English
+                                    {% endif %}
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+                                    <li>
+                                        <form action="{% url 'set_language' %}" method="post">
+                                            {% csrf_token %}
+                                            <input name="next" type="hidden" value="{{ request.path }}">
+                                            <input name="language" type="hidden" value="en">
+                                            <button type="submit" class="dropdown-item">English</button>
+                                        </form>
+                                    </li>
+                                    <li>
+                                        <form action="{% url 'set_language' %}" method="post">
+                                            {% csrf_token %}
+                                            <input name="next" type="hidden" value="{{ request.path }}">
+                                            <input name="language" type="hidden" value="ne">
+                                            <button type="submit" class="dropdown-item">नेपाली</button>
+                                        </form>
+                                    </li>
                         </ul>
                     </li>
-                    {% else %}
+                            
+                            <!-- Theme Toggler -->
                     <li class="nav-item">
-                        <a class="nav-link" href="/accounts/login/"><i class="fas fa-sign-in-alt"></i> Login</a>
+                                <a class="nav-link" href="#" id="themeToggle">
+                                    <i class="fas fa-moon"></i>
+                                </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/accounts/signup/"><i class="fas fa-user-plus"></i> Register</a>
+                            
+                            <!-- Notifications -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="notificationsDropdown" role="button"
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-bell"></i>
+                                    {% if unread_notifications_count > 0 %}
+                                        <span class="badge rounded-pill bg-danger">{{ unread_notifications_count }}</span>
+                                    {% endif %}
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end dropdown-notifications" aria-labelledby="notificationsDropdown">
+                                    <h6 class="dropdown-header bg-primary text-white">Notifications</h6>
+                                    <div class="dropdown-notifications-list">
+                                        {% if notifications %}
+                                            {% for notification in notifications %}
+                                                <a class="dropdown-item notification-item {% if not notification.is_read %}unread{% endif %}" href="#">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="icon-circle 
+                                                            {% if notification.notification_type == 'violation' %}bg-danger
+                                                            {% elif notification.notification_type == 'appeal' %}bg-warning
+                                                            {% elif notification.notification_type == 'payment' %}bg-success
+                                                            {% else %}bg-primary{% endif %}">
+                                                            {% if notification.notification_type == 'violation' %}
+                                                                <i class="fas fa-exclamation-triangle text-white"></i>
+                                                            {% elif notification.notification_type == 'appeal' %}
+                                                                <i class="fas fa-gavel text-white"></i>
+                                                            {% elif notification.notification_type == 'payment' %}
+                                                                <i class="fas fa-money-bill text-white"></i>
+                                                            {% else %}
+                                                                <i class="fas fa-bell text-white"></i>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div>
+                                                            <div class="small text-gray-500">{{ notification.created_at|date:"M d, Y H:i" }}</div>
+                                                            <span class="font-weight-bold">{{ notification.message }}</span>
+                                                        </div>
+                                                    </div>
+                                                </a>
+                                            {% endfor %}
+                                            <a class="dropdown-item text-center small text-gray-500" href="#">Show All Notifications</a>
+                                        {% else %}
+                                            <div class="dropdown-item text-center">No new notifications</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
                     </li>
+                            
+                            <!-- User Account -->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user-circle me-1"></i>
+                                    {% if user.is_authenticated %}
+                                        {{ user.get_full_name|default:user.username }}
+                                    {% else %}
+                                        Account
+                                    {% endif %}
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    {% if user.is_authenticated %}
+                                        <li><a class="dropdown-item" href="/accounts/profile/">
+                                            <i class="fas fa-user fa-sm fa-fw me-2 text-gray-400"></i>
+                                            Profile
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/accounts/settings/">
+                                            <i class="fas fa-cogs fa-sm fa-fw me-2 text-gray-400"></i>
+                                            Settings
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="/accounts/logout/">
+                                            <i class="fas fa-sign-out-alt fa-sm fa-fw me-2 text-gray-400"></i>
+                                            Logout
+                                        </a></li>
+                                    {% else %}
+                                        <li><a class="dropdown-item" href="/accounts/login/">
+                                            <i class="fas fa-sign-in-alt fa-sm fa-fw me-2 text-gray-400"></i>
+                                            Login
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="/accounts/register/">
+                                            <i class="fas fa-user-plus fa-sm fa-fw me-2 text-gray-400"></i>
+                                            Register
+                                        </a></li>
                     {% endif %}
+                                </ul>
+                            </li>
                 </ul>
             </div>
         </div>
     </nav>
     
-    <!-- Main Content -->
-    <main>
-        {% if messages %}
-        <div class="container mt-3">
-            {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        
+            <!-- Content -->
+            <div class="content-section">
         {% block content %}{% endblock %}
-    </main>
-    
-    <!-- Footer -->
-    <footer class="footer mt-auto py-3">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Smart Urban Traffic Management System</h5>
-                    <p>Advanced license plate recognition and traffic management solution.</p>
-                </div>
-                <div class="col-md-3">
-                    <h5>Quick Links</h5>
-                    <ul class="list-unstyled">
-                        <li><a href="/" class="text-light">Home</a></li>
-                        <li><a href="/dashboard/" class="text-light">Dashboard</a></li>
-                        <li><a href="/cameras/" class="text-light">Cameras</a></li>
-                        <li><a href="/ocr/" class="text-light">OCR</a></li>
-                    </ul>
-                </div>
-                <div class="col-md-3">
-                    <h5>Contact</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-envelope me-2"></i> info@sutms.example.com</li>
-                        <li><i class="fas fa-phone me-2"></i> +977 1234567890</li>
-                        <li><i class="fas fa-map-marker-alt me-2"></i> Kathmandu, Nepal</li>
-                    </ul>
-                </div>
-            </div>
-            <hr class="my-4 bg-light">
-            <div class="text-center">
-                <p class="mb-0">&copy; {% now "Y" %} SUTMS. All rights reserved.</p>
             </div>
         </div>
-    </footer>
+    </div>
+
+    <div class="overlay"></div>
     
-    <!-- Bootstrap Bundle with Popper -->
+    <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Extra JavaScript -->
+    <!-- Custom JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
+            const overlay = document.querySelector('.overlay');
+            const sidebarToggle = document.getElementById('sidebarCollapse');
+            let isSidebarVisible = true;
+            
+            function toggleSidebar() {
+                isSidebarVisible = !isSidebarVisible;
+                sidebar.classList.toggle('collapsed');
+                content.classList.toggle('expanded');
+                
+                if (isMobile()) {
+                    overlay.classList.toggle('active');
+                }
+            }
+            
+            function isMobile() {
+                return window.innerWidth < 992;
+            }
+            
+            // Toggle sidebar
+            sidebarToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleSidebar();
+            });
+            
+            // Close sidebar when clicking overlay
+            overlay.addEventListener('click', function() {
+                if (!isSidebarVisible && isMobile()) {
+                    toggleSidebar();
+                }
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                if (!isMobile() && overlay.classList.contains('active')) {
+                    overlay.classList.remove('active');
+                }
+            });
+            
+            // Theme toggler
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = themeToggle.querySelector('i');
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            
+            // Apply saved theme
+            if (currentTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            }
+            
+            themeToggle.addEventListener('click', function() {
+                if (document.documentElement.getAttribute('data-theme') === 'dark') {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                }
+            });
+        });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>
