@@ -5,6 +5,7 @@ venv/
 ENV/
 env/
 
+
 # Python bytecode
 __pycache__/
 *.py[cod]
@@ -17,6 +18,7 @@ build/
 
 # Local development settings
 .env
+.env-keys
 .env.local
 
 # Database
